@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Elite Hockey Reaction Test</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #0b3d2e;
+        color: white;
+        text-align: center;
+        overflow: hidden;
+        margin: 0;
+    }
+
+    /* HOME BUTTON */
+    .home-button {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background-color: #00ffcc;
+        color: black;
+        padding: 10px 15px;
+        text-decoration: none;
+        font-weight: bold;
+        border-radius: 8px;
+        transition: 0.2s ease;
+        z-index: 1000;
+    }
+
+    .home-button:hover {
+        background-color: white;
+        transform: scale(1.05);
+    }
+
+    h1 {
+        margin-top: 60px;
+        letter-spacing: 2px;
+    }
+
+    #numberDisplay {
+        position: absolute;
+        font-size: 70px;
+        font-weight: bold;
+        color: #00ffcc;
+    }
+
+    #inputBox {
+        font-size: 24px;
+        padding: 10px;
+        width: 220px;
+        text-align: center;
+        display: none;
+        margin-top: 120px;
+    }
+
+    #result {
+        margin-top: 20px;
+        font-size: 22px;
+        font-weight: bold;
+    }
+
+    #stats {
+        margin-top: 20px;
+        font-size: 16px;
+    }
+</style>
+</head>
+<body>
+
+<!-- HOME BUTTON -->
+<a href="index.html" class="home-button">🏠 Home</a>
+
+<h1>🏑 ELITE VISION TRAINER</h1>
+
+<div id="numberDisplay"></div>
+
+<br>
+<input type="text" id="inputBox" placeholder="Enter number" autocomplete="off">
+
+<div id="result"></div>
+<div id="stats"></div>
+
+<script>
+let currentNumber = "";
+let correctStreak = 0;
+let totalCorrect = 0;
+let totalAttempts = 0;
+let difficultyLevel = 1;
+let displayTime = 150;
+let maxDigits = 2;
+let inputStartTime = 0;
+
+function generateRandomNumber() {
+    const length = Math.floor(Math.random() * maxDigits) + 1;
+    let number = "";
+    for (let i = 0; i < length; i++) {
+        number += Math.floor(Math.random() * 10);
+    }
+    return number;
+}
+
+function randomPosition(element) {
+    const padding = 120;
+    const maxX = window.innerWidth - padding;
+    const maxY = window.innerHeight - padding;
+
+    element.style.left = Math.random() * maxX + "px";
+    element.style.top = Math.random() * maxY + "px";
+}
+
+function increaseDifficulty() {
+    difficultyLevel++;
+    maxDigits++;
+    displayTime = Math.max(60, displayTime - 15);
+}
+
+function startRound() {
+    document.getElementById("result").textContent = "";
+    document.getElementById("inputBox").value = "";
+    document.getElementById("inputBox").style.display = "none";
+
+    currentNumber = generateRandomNumber();
+    const display = document.getElementById("numberDisplay");
+
+    display.textContent = currentNumber;
+    randomPosition(display);
+
+    setTimeout(() => {
+        display.textContent = "";
+        document.getElementById("inputBox").style.display = "inline-block";
+        document.getElementById("inputBox").focus();
+        inputStartTime = Date.now();
+    }, displayTime);
+}
+
+function updateStats(reaction) {
+    document.getElementById("stats").textContent =
+        "Level: " + difficultyLevel +
+        " | Streak: " + correctStreak +
+        " | Accuracy: " + Math.round((totalCorrect/totalAttempts)*100) + "%" +
+        " | Display: " + displayTime + "ms" +
+        " | Reaction: " + reaction + "ms";
+}
+
+document.getElementById("inputBox").addEventListener("keydown", function(e) {
+    if (e.key === "Enter") checkAnswer();
+});
+
+function checkAnswer() {
+    const userAnswer = document.getElementById("inputBox").value.trim();
+    const reaction = Date.now() - inputStartTime;
+
+    totalAttempts++;
+
+    if (userAnswer === currentNumber) {
+        totalCorrect++;
+        correctStreak++;
+        document.getElementById("result").textContent = "🔥 CLEAN TOUCH";
+        document.getElementById("result").style.color = "#00ffcc";
+    } else {
+        correctStreak = 0;
+        document.getElementById("result").textContent =
+            "❌ Turnover (Was " + currentNumber + ")";
+        document.getElementById("result").style.color = "red";
+    }
+
+    if (correctStreak > 0 && correctStreak % 3 === 0) {
+        increaseDifficulty();
+        document.getElementById("result").textContent += " | LEVEL UP ⚡";
+    }
+
+    updateStats(reaction);
+
+    setTimeout(startRound, 800);
+}
+
+setTimeout(startRound, 1000);
+</script>
+
+</body>
+</html>
