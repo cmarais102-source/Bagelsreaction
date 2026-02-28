@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Elite Vision Lab</title>
+<style>
+    body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: linear-gradient(135deg, #0b3d2e, #000);
+        color: white;
+        text-align: center;
+    }
+
+    h1 {
+        margin-top: 50px;
+        font-size: 42px;
+        letter-spacing: 3px;
+    }
+
+    p {
+        color: #cccccc;
+        margin-bottom: 40px;
+    }
+
+    .container {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 30px;
+        padding: 20px;
+    }
+
+    .card {
+        background: #111;
+        border-radius: 15px;
+        width: 250px;
+        padding: 30px 20px;
+        cursor: pointer;
+        transition: 0.3s ease;
+        border: 2px solid transparent;
+    }
+
+    .card:hover {
+        transform: scale(1.05);
+        border: 2px solid #00ffcc;
+        box-shadow: 0 0 20px #00ffcc;
+    }
+
+    .card h2 {
+        margin-bottom: 10px;
+        color: #00ffcc;
+    }
+
+    .card p {
+        font-size: 14px;
+        color: #aaa;
+    }
+
+    footer {
+        margin-top: 60px;
+        font-size: 14px;
+        color: #555;
+    }
+</style>
+</head>
+<body>
+
+<h1>🏑 ELITE VISION LAB</h1>
+<p>Select your training module</p>
+
+<div class="container">
+
+    <div class="card" onclick="location.href='reaction.html'">
+        <h2>⚡ Reaction Number Test</h2>
+        <p>Ultra-fast visual recall. Progressive difficulty mode.</p>
+    </div>
+
+    <div class="card" onclick="location.href='#'">
+        <h2>🎯 Peripheral Awareness</h2>
+        <p>Edge-of-screen recognition training. (Coming Soon)</p>
+    </div>
+
+    <div class="card" onclick="location.href='#'">
+        <h2>🟢 Decision Speed</h2>
+        <p>Pass or shoot response training. (Coming Soon)</p>
+    </div>
+
+    <div class="card" onclick="location.href='#'">
+        <h2>🔥 Dual Task Mode</h2>
+        <p>Memory + reaction under pressure. (Coming Soon)</p>
+    </div>
+
+</div>
+
+<footer>
+Built for high-performance athletes 🧠⚡
+</footer>
+
+</body>
+</html>
