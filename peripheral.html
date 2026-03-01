@@ -17,7 +17,6 @@
         align-items: center;
     }
 
-    /* Focus Point to keep eyes centered */
     #focus-point {
         position: absolute;
         top: 50%;
@@ -53,18 +52,9 @@
         z-index: 10;
     }
 
-    #ui-layer {
-        position: relative;
-        z-index: 20;
-        pointer-events: none;
-    }
+    #ui-layer { position: relative; z-index: 20; pointer-events: none; }
 
-    #result {
-        height: 40px;
-        font-size: 24px;
-        font-weight: bold;
-        margin-top: 10px;
-    }
+    #result { height: 40px; font-size: 24px; font-weight: bold; margin-top: 10px; }
 
     #stats {
         background: rgba(0,0,0,0.3);
@@ -75,6 +65,103 @@
     }
     
     .instruction { font-size: 0.9rem; color: #888; margin-top: 5px;}
+    
+    /* STOPWATCH STYLES */
+    #stopwatch-container {
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        background: rgba(0, 0, 0, 0.7);
+        color: #00ffcc;
+        padding: 10px 15px;
+        border-radius: 8px;
+        font-family: 'Courier New', Courier, monospace;
+        font-weight: bold;
+        border: 1px solid #00ffcc;
+        z-index: 2000;
+        text-align: center;
+    }
+
+    #stopwatch-display {
+        font-size: 20px;
+        margin-bottom: 5px;
+    }
+
+    .stopwatch-btn {
+        background: transparent;
+        border: 1px solid #00ffcc;
+        color: #00ffcc;
+        padding: 2px 8px;
+        font-size: 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        margin: 0 2px;
+    }
+
+    .stopwatch-btn:hover {
+        background: #00ffcc;
+        color: black;
+    }
+
+    #numberDisplay {
+        position: absolute;
+        font-size: 70px;
+        font-weight: bold;
+        color: #00ffcc;
+    }
+
+    #inputBox {
+        font-size: 24px;
+        padding: 10px;
+        width: 220px;
+        text-align: center;
+        display: none;
+        margin-top: 120px;
+    }
+
+    #result {
+        margin-top: 20px;
+        font-size: 22px;
+        font-weight: bold;
+    }
+
+    #stats {
+        margin-top: 20px;
+        font-size: 16px;
+
+    /* Level Summary Overlay */
+    #summary-overlay {
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(11, 26, 22, 0.95);
+        display: none;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 2000;
+    }
+
+    .summary-card {
+        background: #1a2e29;
+        padding: 40px;
+        border-radius: 15px;
+        border: 2px solid #00ffcc;
+        min-width: 300px;
+    }
+
+    button {
+        background: #00ffcc;
+        border: none;
+        padding: 15px 30px;
+        font-size: 1.2rem;
+        font-weight: bold;
+        border-radius: 8px;
+        cursor: pointer;
+        margin-top: 20px;
+    }
+
+    button:hover { background: #00d4aa; }
+    .fail-text { color: #ff4444; margin-top: 10px; font-weight: bold; }
 </style>
 </head>
 <body>
@@ -85,11 +172,26 @@
 <div id="ui-layer">
     <h1>PERIPHERAL VISION TRAINER</h1>
     <div id="result">GET READY...</div>
-    <div id="stats">Level: 1 | Streak: 0 | Accuracy: 0%</div>
-    <p class="instruction">Press the first letter: (R)ed, (B)lue, (G)reen, (Y)ellow, (O)range</p>
+    <div id="stats">Level: 1 | Round: 0/10 | Accuracy: 0%</div>
+    <p class="instruction">Press: (R)ed, (B)lue, (G)reen, (Y)ellow, (O)range</p>
 </div>
 
+<div id="stopwatch-container">
+    <div id="stopwatch-display">00:00:00</div>
+    <button class="stopwatch-btn" onclick="startStopwatch()">Start</button>
+    <button class="stopwatch-btn" onclick="stopStopwatch()">Stop</button>
+
 <div id="colorBox"></div>
+
+<div id="summary-overlay">
+    <div class="summary-card">
+        <h2 id="summary-title">Level Complete</h2>
+        <p id="summary-stats"></p>
+        <p id="summary-msg"></p>
+        <button id="next-btn" onclick="startNextLevel()">Next Level</button>
+        <button id="retry-btn" onclick="retryLevel()" style="background: #ffaa00; display: none;">Retry Level</button>
+    </div>
+</div>
 
 <script>
 const colors = [
@@ -99,108 +201,192 @@ const colors = [
     { name: "yellow", key: "y" },
     { name: "green", key: "g" }
 ];
+// --- STOPWATCH VARIABLES ---
+let startTime;
+let elapsedTime = 0;
+let stopwatchInterval;
+let stopwatchRunning = false;
+const stopwatchDisplay = document.getElementById("stopwatch-display");
+
+// --- STOPWATCH FUNCTIONS ---
+function startStopwatch() {
+    if (!stopwatchRunning) {
+        stopwatchRunning = true;
+        startTime = Date.now() - elapsedTime;
+        stopwatchInterval = setInterval(updateTime, 10);
+    }
+}
+
+function stopStopwatch() {
+    if (stopwatchRunning) {
+        stopwatchRunning = false;
+        clearInterval(stopwatchInterval);
+    }
+}
+
+function updateTime() {
+    elapsedTime = Date.now() - startTime;
+    stopwatchDisplay.textContent = formatTime(elapsedTime);
+}
+
+function formatTime(time) {
+    let milliseconds = Math.floor((time % 1000) / 10);
+    let seconds = Math.floor((time / 1000) % 60);
+    let minutes = Math.floor((time / (1000 * 60)) % 60);
+
+    return (
+        (minutes < 10 ? "0" + minutes : minutes) + ":" +
+        (seconds < 10 ? "0" + seconds : seconds) + ":" +
+        (milliseconds < 10 ? "0" + milliseconds : milliseconds)
+    );
+}
 
 // Game State
 let level = 1;
-let correctStreak = 0;
 let totalCorrect = 0;
 let totalAttempts = 0;
+let roundsPerLevel = 10;
 let canInput = false;
 let currentColor = null;
+let timeoutTracker = null;
 
-// Difficulty Settings (Scalable)
 let config = {
-    displayTime: 600,    // How long color stays visible
-    boxSize: 180,        // Size of the square
-    nextRoundDelay: 1200 // Time between rounds
+    displayTime: 600,    
+    responseTimeLimit: 600, // 0.6 seconds limit
+    boxSize: 180,        
+    spawnDelay: 1000 
 };
 
 const box = document.getElementById("colorBox");
 const resultEl = document.getElementById("result");
 const statsEl = document.getElementById("stats");
+const summaryOverlay = document.getElementById("summary-overlay");
 
 function updateStats() {
     const acc = totalAttempts ? Math.round((totalCorrect / totalAttempts) * 100) : 0;
-    statsEl.innerHTML = `Level: ${level} | Streak: ${correctStreak} | Accuracy: ${acc}% | Speed: ${config.displayTime}ms`;
+    statsEl.innerHTML = `Level: ${level} | Round: ${totalAttempts}/${roundsPerLevel} | Accuracy: ${acc}%`;
 }
 
 function spawnColor() {
+    if (totalAttempts >= roundsPerLevel) {
+        showSummary();
+        return;
+    }
+
     canInput = false;
     resultEl.textContent = "WATCH...";
     resultEl.style.color = "white";
 
-    // Select color
     currentColor = colors[Math.floor(Math.random() * colors.length)];
-    
-    // Set size and color
     box.style.width = config.boxSize + "px";
     box.style.height = config.boxSize + "px";
     box.style.backgroundColor = currentColor.name;
 
-    // Position (ensure it stays on screen)
     const padding = 50;
     const maxX = window.innerWidth - config.boxSize - padding;
     const maxY = window.innerHeight - config.boxSize - padding;
     box.style.left = (Math.random() * maxX + padding/2) + "px";
     box.style.top = (Math.random() * maxY + padding/2) + "px";
 
-    // The Flash
     setTimeout(() => {
         box.style.display = "block";
         
         setTimeout(() => {
             box.style.display = "none";
             canInput = true;
-            resultEl.textContent = "TYPE NOW!";
+            resultEl.textContent = "TYPE NOW! (0.6s)";
+            
+            // Start the 0.6s countdown
+            timeoutTracker = setTimeout(() => {
+                if (canInput) {
+                    handleInput({ key: "timeout" }); 
+                }
+            }, config.responseTimeLimit);
+
         }, config.displayTime);
-        
     }, 500); 
 }
 
 function handleInput(e) {
     if (!canInput) return;
     
+    clearTimeout(timeoutTracker);
+    canInput = false;
+    totalAttempts++;
+
     const keyPressed = e.key.toLowerCase();
     const isCorrect = keyPressed === currentColor.key;
     
-    canInput = false; // Only one guess per flash
-    totalAttempts++;
-
-    if (isCorrect) {
+    if (keyPressed === "timeout") {
+        resultEl.textContent = "⏱ TOO SLOW!";
+        resultEl.style.color = "#ff4444";
+    } else if (isCorrect) {
         totalCorrect++;
-        correctStreak++;
         resultEl.textContent = "✔ CORRECT";
         resultEl.style.color = "#00ffcc";
-        
-        // Level up every 3 correct answers
-        if (correctStreak % 3 === 0) {
-            levelUp();
-        }
     } else {
-        correctStreak = 0;
-        resultEl.textContent = "✘ WRONG / LATE";
+        resultEl.textContent = "✘ WRONG KEY";
         resultEl.style.color = "#ff4444";
     }
 
     updateStats();
+    setTimeout(spawnColor, config.spawnDelay);
+}
+
+function showSummary() {
+    const accuracy = (totalCorrect / totalAttempts) * 100;
+    const passed = accuracy >= 90;
+
+    summaryOverlay.style.display = "flex";
+    document.getElementById("summary-title").textContent = passed ? `Level ${level} Cleared!` : `Level ${level} Failed`;
+    document.getElementById("summary-stats").innerHTML = `Accuracy: <b>${Math.round(accuracy)}%</b><br>Correct: ${totalCorrect} / ${totalAttempts}`;
     
-    // Trigger next round automatically
-    setTimeout(spawnColor, config.nextRoundDelay);
+    const msgEl = document.getElementById("summary-msg");
+    const nextBtn = document.getElementById("next-btn");
+    const retryBtn = document.getElementById("retry-btn");
+
+    if (passed) {
+        msgEl.innerHTML = "Great job! Your peripheral focus is sharp.";
+        msgEl.className = "";
+        nextBtn.style.display = "block";
+        retryBtn.style.display = "none";
+    } else {
+        msgEl.innerHTML = "Accuracy below 90%. You must repeat this level.";
+        msgEl.className = "fail-text";
+        nextBtn.style.display = "none";
+        retryBtn.style.display = "block";
+    }
 }
 
-function levelUp() {
+function startNextLevel() {
     level++;
-    config.displayTime = Math.max(100, config.displayTime - 60); // Faster flash
-    config.boxSize = Math.max(40, config.boxSize - 15);         // Smaller target
-    config.nextRoundDelay = Math.max(500, config.nextRoundDelay - 100); // Faster pace
-    resultEl.textContent = "⚡ LEVEL UP! ⚡";
+    // Make it harder
+    config.boxSize = Math.max(50, config.boxSize - 20);
+    config.displayTime = Math.max(200, config.displayTime - 50);
+    resetGameState();
 }
 
-// Listen for keys
+function retryLevel() {
+    resetGameState();
+}
+
+function resetGameState() {
+    totalCorrect = 0;
+    totalAttempts = 0;
+    summaryOverlay.style.display = "none";
+    updateStats();
+    spawnColor();
+}
+
 document.addEventListener("keydown", handleInput);
 
-// Start game
+// Initial Start
 setTimeout(spawnColor, 1500);
+
+// Start game and stopwatch automatically
+startStopwatch();
+startRound();
+
 </script>
 
 </body>
