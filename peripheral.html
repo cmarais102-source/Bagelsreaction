@@ -77,6 +77,7 @@
         border: 1px solid rgba(0, 255, 204, 0.3);
         display: flex;
         gap: 25px;
+        pointer-events: auto; /* Allow interaction */
     }
 
     #colorBox {
@@ -86,6 +87,24 @@
         box-shadow: 0 0 30px rgba(0,0,0,0.8);
         z-index: 10;
     }
+
+    /* Start Button Styling */
+    #start-btn {
+        background: #00ffcc;
+        border: none;
+        padding: 20px 50px;
+        font-size: 1.5rem;
+        font-weight: bold;
+        border-radius: 10px;
+        cursor: pointer;
+        color: black;
+        box-shadow: 0 0 20px rgba(0, 255, 204, 0.5);
+        transition: 0.2s;
+        margin-top: 20px;
+        pointer-events: auto;
+    }
+
+    #start-btn:hover { background: #fff; transform: scale(1.05); }
 
     #summary-overlay {
         position: fixed;
@@ -140,13 +159,14 @@
 </div>
 
 <div id="ui-layer">
-    <div id="result">EXTREME MODE ACTIVE</div>
+    <div id="result">READY</div>
     <div id="stats-bar">
         <span>LVL: <span id="lvl-val">1</span></span>
         <span>HITS: <span id="hit-val">0</span></span>
         <span>ACCURACY: <span id="acc-val">0%</span></span>
     </div>
     <p style="color: #666; font-size: 12px; margin-top: 10px;">Goal: <span id="goal-val">70</span>% Accuracy to Advance</p>
+    <button id="start-btn" onclick="beginProtocol()">BEGIN TEST</button>
 </div>
 
 <div id="colorBox"></div>
@@ -169,8 +189,11 @@ const colors = [
     { name: "green", key: "g" }
 ];
 
+// Session Stopwatch Logic
 let sessionStartTime = Date.now();
+let sessionRunning = false;
 setInterval(() => {
+    if(!sessionRunning) return;
     let elapsed = Date.now() - sessionStartTime;
     let ms = Math.floor((elapsed % 1000) / 10);
     let s = Math.floor((elapsed / 1000) % 60);
@@ -179,6 +202,7 @@ setInterval(() => {
         `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}:${ms.toString().padStart(2, '0')}`;
 }, 10);
 
+// Game State
 let level = 1;
 let totalCorrect = 0;
 let totalAttempts = 0;
@@ -192,15 +216,16 @@ let levelPassed = false;
 
 // EXTREME DIFFICULTY START
 let config = {
-    boxSize: 80,          // Small targets
-    flashDuration: 200,    // Blink speed
-    reactionWindow: 550,   // Tight reaction time
+    boxSize: 80,          
+    flashDuration: 200,    
+    reactionWindow: 550,   
     passRate: 0.70,
-    spawnDelay: 300        // Fast pacing
+    spawnDelay: 300        
 };
 
 const box = document.getElementById("colorBox");
 const roundDisplay = document.getElementById("round-timer-display");
+const startBtn = document.getElementById("start-btn");
 
 function updateUI() {
     document.getElementById("lvl-val").textContent = level;
@@ -208,6 +233,13 @@ function updateUI() {
     const acc = totalAttempts ? Math.round((totalCorrect / totalAttempts) * 100) : 0;
     document.getElementById("acc-val").textContent = acc + "%";
     document.getElementById("goal-val").textContent = Math.round(config.passRate * 100);
+}
+
+// Start Function triggered by button
+function beginProtocol() {
+    startBtn.style.display = 'none';
+    sessionRunning = true;
+    startRound();
 }
 
 function startRound() {
@@ -322,7 +354,6 @@ function handleAction() {
 }
 
 document.addEventListener("keydown", handleInput);
-setTimeout(startRound, 1000);
 </script>
 </body>
 </html>
