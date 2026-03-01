@@ -14,6 +14,27 @@ body {
     overflow: hidden;
 }
 
+/* HOME BUTTON */
+.home-button {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background-color: #00ffcc;
+    color: black;
+    padding: 12px 20px;
+    text-decoration: none;
+    font-weight: bold;
+    border-radius: 8px;
+    transition: 0.2s ease;
+    z-index: 2000; /* Higher than overlays */
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
+
+.home-button:hover {
+    background-color: white;
+    transform: translateY(-2px);
+}
+
 h1 {
     margin-top: 40px;
     font-size: 32px;
@@ -27,6 +48,7 @@ h1 {
     background: rgba(255,255,255,0.08);
     backdrop-filter: blur(10px);
     display: inline-block;
+    border: 1px solid rgba(255,255,255,0.1);
 }
 
 button {
@@ -50,6 +72,7 @@ button:hover {
     position: absolute;
     font-weight: bold;
     user-select: none;
+    pointer-events: none;
 }
 
 /* Overlay Screens */
@@ -64,11 +87,14 @@ button:hover {
     justify-content: center;
     align-items: center;
     flex-direction: column;
+    z-index: 1500;
 }
 </style>
 </head>
 
 <body>
+
+<a href="index.html" class="home-button">🏠 HOME</a>
 
 <h1>🏑 ELITE REACTION LAB</h1>
 
@@ -102,17 +128,18 @@ let active=false;
 const overlay=document.getElementById("overlay");
 
 function randomAttempts(){
-    return Math.floor(Math.random()*11)+10; // 10-30
+    return Math.floor(Math.random()*11)+10; // 10-20
 }
 
 function showLevelBrief(){
     requiredAttempts=randomAttempts();
     targetColor=colors[Math.floor(Math.random()*colors.length)];
 
+    overlay.style.display="flex";
     overlay.innerHTML=`
         <div class="panel">
             <h2>Level ${level}</h2>
-            <p><strong>Target Colour:</strong> ${targetColor.toUpperCase()}</p>
+            <p>Press the key for the <strong style="color:${targetColor}">${targetColor.toUpperCase()}</strong> arrow</p>
             <p><strong>Time Limit:</strong> ${(allowedTime/1000).toFixed(2)}s</p>
             <p><strong>Tests:</strong> ${requiredAttempts}</p>
             <button onclick="startLevel()">Start Level</button>
@@ -134,9 +161,13 @@ function clearArrows(){
 }
 
 function randomPosition(el){
-    const pad=arrowSize;
-    el.style.left=Math.random()*(window.innerWidth-pad)+"px";
-    el.style.top=Math.random()*(window.innerHeight-pad)+"px";
+    const pad = 150;
+    // Math to avoid the home button and header area
+    let x = Math.random() * (window.innerWidth - pad);
+    let y = Math.random() * (window.innerHeight - pad - 100) + 100;
+
+    el.style.left = x + "px";
+    el.style.top = y + "px";
 }
 
 function generateArrows(){
@@ -144,6 +175,7 @@ function generateArrows(){
 
     const distractorColors=colors.filter(c=>c!==targetColor);
 
+    // Spawn distractors
     for(let i=0;i<arrowCount-1;i++){
         let a=document.createElement("div");
         a.className="arrow";
@@ -154,6 +186,7 @@ function generateArrows(){
         document.body.appendChild(a);
     }
 
+    // Spawn target
     let correctArrow=document.createElement("div");
     correctArrow.className="arrow";
     correctArrow.textContent=arrows[Math.floor(Math.random()*arrows.length)];
@@ -170,7 +203,7 @@ function endLevel(){
     active=false;
     clearArrows();
 
-    let accuracy=(correct/attempts)*100;
+    let accuracy= (attempts > 0) ? (correct/attempts)*100 : 0;
     let avgReaction=correct>0?(totalReaction/correct):0;
     let passed=accuracy>=80;
 
@@ -181,8 +214,7 @@ function endLevel(){
             <p><strong>Accuracy:</strong> ${accuracy.toFixed(1)}%</p>
             <p><strong>Average Reaction:</strong> ${avgReaction.toFixed(0)} ms</p>
             <p><strong>Time Limit:</strong> ${allowedTime} ms</p>
-            <p><strong>Attempts:</strong> ${attempts}</p>
-            <button onclick="nextLevel(${passed})">Continue</button>
+            <button onclick="nextLevel(${passed})">${passed ? "Next Level" : "Try Again"}</button>
         </div>
     `;
 }
@@ -191,19 +223,20 @@ function nextLevel(passed){
     if(passed){
         level++;
         allowedTime=Math.max(300,allowedTime-50);
-        arrowSize=Math.max(40,arrowSize-10);
-        arrowCount+=2;
+        arrowSize=Math.max(50,arrowSize-5);
+        arrowCount+=1;
     }
     showLevelBrief();
 }
 
 document.addEventListener("keydown",function(e){
-    if(!active)return;
+    if(!active) return;
+    if(!arrowKeys[e.key]) return; // Ignore non-arrow keys
 
     let reaction=performance.now()-spawnTime;
     attempts++;
 
-    if(arrowKeys[e.key]===targetArrow && reaction<=allowedTime){
+    if(arrowKeys[e.key] === targetArrow && reaction <= allowedTime){
         correct++;
         totalReaction+=reaction;
     }
