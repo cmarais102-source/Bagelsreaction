@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Elite Reaction Lab</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+    color: white;
+    text-align: center;
+    overflow: hidden;
+}
+
+h1 {
+    margin-top: 40px;
+    font-size: 32px;
+    letter-spacing: 2px;
+}
+
+/* Glass Panel */
+.panel {
+    padding: 20px 40px;
+    border-radius: 18px;
+    background: rgba(255,255,255,0.08);
+    backdrop-filter: blur(10px);
+    display: inline-block;
+}
+
+button {
+    margin-top: 20px;
+    padding: 12px 30px;
+    font-size: 18px;
+    border-radius: 12px;
+    border: none;
+    background: #00ffcc;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+button:hover {
+    background: white;
+    color: black;
+}
+
+.arrow {
+    position: absolute;
+    font-weight: bold;
+    user-select: none;
+}
+
+/* Overlay Screens */
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.95);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+</style>
+</head>
+
+<body>
+
+<h1>🏑 ELITE REACTION LAB</h1>
+
+<div id="overlay" class="overlay"></div>
+
+<script>
+const colors=["red","blue","orange","yellow","green"];
+const arrows=["↑","↓","←","→"];
+const arrowKeys={
+    "ArrowUp":"↑",
+    "ArrowDown":"↓",
+    "ArrowLeft":"←",
+    "ArrowRight":"→"
+};
+
+let level=1;
+let arrowSize=100;
+let arrowCount=6;
+let allowedTime=900;
+
+let attempts=0;
+let correct=0;
+let totalReaction=0;
+let requiredAttempts=0;
+
+let targetColor="";
+let targetArrow="";
+let spawnTime=0;
+let active=false;
+
+const overlay=document.getElementById("overlay");
+
+function randomAttempts(){
+    return Math.floor(Math.random()*11)+10; // 10-30
+}
+
+function showLevelBrief(){
+    requiredAttempts=randomAttempts();
+    targetColor=colors[Math.floor(Math.random()*colors.length)];
+
+    overlay.innerHTML=`
+        <div class="panel">
+            <h2>Level ${level}</h2>
+            <p><strong>Target Colour:</strong> ${targetColor.toUpperCase()}</p>
+            <p><strong>Time Limit:</strong> ${(allowedTime/1000).toFixed(2)}s</p>
+            <p><strong>Tests:</strong> ${requiredAttempts}</p>
+            <button onclick="startLevel()">Start Level</button>
+        </div>
+    `;
+}
+
+function startLevel(){
+    overlay.style.display="none";
+    attempts=0;
+    correct=0;
+    totalReaction=0;
+    active=true;
+    generateArrows();
+}
+
+function clearArrows(){
+    document.querySelectorAll(".arrow").forEach(a=>a.remove());
+}
+
+function randomPosition(el){
+    const pad=arrowSize;
+    el.style.left=Math.random()*(window.innerWidth-pad)+"px";
+    el.style.top=Math.random()*(window.innerHeight-pad)+"px";
+}
+
+function generateArrows(){
+    clearArrows();
+
+    const distractorColors=colors.filter(c=>c!==targetColor);
+
+    for(let i=0;i<arrowCount-1;i++){
+        let a=document.createElement("div");
+        a.className="arrow";
+        a.textContent=arrows[Math.floor(Math.random()*arrows.length)];
+        a.style.color=distractorColors[Math.floor(Math.random()*distractorColors.length)];
+        a.style.fontSize=arrowSize+"px";
+        randomPosition(a);
+        document.body.appendChild(a);
+    }
+
+    let correctArrow=document.createElement("div");
+    correctArrow.className="arrow";
+    correctArrow.textContent=arrows[Math.floor(Math.random()*arrows.length)];
+    correctArrow.style.color=targetColor;
+    correctArrow.style.fontSize=arrowSize+"px";
+    randomPosition(correctArrow);
+    document.body.appendChild(correctArrow);
+
+    targetArrow=correctArrow.textContent;
+    spawnTime=performance.now();
+}
+
+function endLevel(){
+    active=false;
+    clearArrows();
+
+    let accuracy=(correct/attempts)*100;
+    let avgReaction=correct>0?(totalReaction/correct):0;
+    let passed=accuracy>=80;
+
+    overlay.style.display="flex";
+    overlay.innerHTML=`
+        <div class="panel">
+            <h2>${passed?"LEVEL PASSED":"LEVEL FAILED"}</h2>
+            <p><strong>Accuracy:</strong> ${accuracy.toFixed(1)}%</p>
+            <p><strong>Average Reaction:</strong> ${avgReaction.toFixed(0)} ms</p>
+            <p><strong>Time Limit:</strong> ${allowedTime} ms</p>
+            <p><strong>Attempts:</strong> ${attempts}</p>
+            <button onclick="nextLevel(${passed})">Continue</button>
+        </div>
+    `;
+}
+
+function nextLevel(passed){
+    if(passed){
+        level++;
+        allowedTime=Math.max(300,allowedTime-50);
+        arrowSize=Math.max(40,arrowSize-10);
+        arrowCount+=2;
+    }
+    showLevelBrief();
+}
+
+document.addEventListener("keydown",function(e){
+    if(!active)return;
+
+    let reaction=performance.now()-spawnTime;
+    attempts++;
+
+    if(arrowKeys[e.key]===targetArrow && reaction<=allowedTime){
+        correct++;
+        totalReaction+=reaction;
+    }
+
+    if(attempts>=requiredAttempts){
+        endLevel();
+    }else{
+        generateArrows();
+    }
+});
+
+showLevelBrief();
+</script>
+
+</body>
+</html>
