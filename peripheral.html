@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Peripheral Awareness Test</title>
+<title>Peripheral Training - Time Attack</title>
 <style>
     body {
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -22,12 +22,35 @@
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        width: 10px;
-        height: 10px;
-        background-color: rgba(255, 255, 255, 0.5);
+        width: 8px;
+        height: 8px;
+        background-color: rgba(0, 255, 204, 0.4);
         border-radius: 50%;
         z-index: 0;
     }
+
+    /* TOP LEFT: ROUND COUNTDOWN */
+    #round-timer-container {
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        text-align: left;
+        z-index: 2000;
+        color: #ff4444;
+    }
+
+    /* TOP RIGHT: SESSION STOPWATCH */
+    #session-stopwatch-container {
+        position: fixed;
+        top: 20px;
+        right: 120px; /* Shifted left to avoid home button overlap */
+        text-align: right;
+        z-index: 2000;
+        color: #00ffcc;
+    }
+
+    .label { font-size: 10px; color: #666; letter-spacing: 1px; display: block; text-transform: uppercase; }
+    .timer-val { font-size: 24px; font-weight: bold; font-family: 'Courier New', monospace; }
 
     .home-button {
         position: fixed;
@@ -35,133 +58,69 @@
         right: 20px;
         background-color: #00ffcc;
         color: black;
-        padding: 10px 15px;
+        padding: 8px 15px;
         text-decoration: none;
         font-weight: bold;
-        border-radius: 8px;
+        border-radius: 5px;
         z-index: 1000;
     }
 
-    h1 { margin-top: 30px; font-size: 1.5rem; opacity: 0.7; }
+    #ui-layer { margin-top: 50px; position: relative; z-index: 20; pointer-events: none; }
+    #result { height: 40px; font-size: 28px; font-weight: bold; margin: 15px 0; }
+    
+    #stats-bar {
+        background: rgba(255, 255, 255, 0.05);
+        padding: 12px 30px;
+        border-radius: 30px;
+        font-family: monospace;
+        border: 1px solid rgba(0, 255, 204, 0.2);
+        display: flex;
+        gap: 25px;
+    }
 
     #colorBox {
         position: absolute;
         display: none;
-        border-radius: 4px;
-        box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        border-radius: 6px;
+        box-shadow: 0 0 25px rgba(0,0,0,0.6);
         z-index: 10;
     }
 
-    #ui-layer { position: relative; z-index: 20; pointer-events: none; }
-
-    #result { height: 40px; font-size: 24px; font-weight: bold; margin-top: 10px; }
-
-    #stats {
-        background: rgba(0,0,0,0.3);
-        padding: 10px 20px;
-        border-radius: 20px;
-        margin-top: 10px;
-        font-family: monospace;
-    }
-    
-    .instruction { font-size: 0.9rem; color: #888; margin-top: 5px;}
-    
-    /* STOPWATCH STYLES */
-    #stopwatch-container {
-        position: fixed;
-        top: 20px;
-        left: 20px;
-        background: rgba(0, 0, 0, 0.7);
-        color: #00ffcc;
-        padding: 10px 15px;
-        border-radius: 8px;
-        font-family: 'Courier New', Courier, monospace;
-        font-weight: bold;
-        border: 1px solid #00ffcc;
-        z-index: 2000;
-        text-align: center;
-    }
-
-    #stopwatch-display {
-        font-size: 20px;
-        margin-bottom: 5px;
-    }
-
-    .stopwatch-btn {
-        background: transparent;
-        border: 1px solid #00ffcc;
-        color: #00ffcc;
-        padding: 2px 8px;
-        font-size: 12px;
-        border-radius: 4px;
-        cursor: pointer;
-        margin: 0 2px;
-    }
-
-    .stopwatch-btn:hover {
-        background: #00ffcc;
-        color: black;
-    }
-
-    #numberDisplay {
-        position: absolute;
-        font-size: 70px;
-        font-weight: bold;
-        color: #00ffcc;
-    }
-
-    #inputBox {
-        font-size: 24px;
-        padding: 10px;
-        width: 220px;
-        text-align: center;
-        display: none;
-        margin-top: 120px;
-    }
-
-    #result {
-        margin-top: 20px;
-        font-size: 22px;
-        font-weight: bold;
-    }
-
-    #stats {
-        margin-top: 20px;
-        font-size: 16px;
-
-    /* Level Summary Overlay */
     #summary-overlay {
         position: fixed;
         top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(11, 26, 22, 0.95);
+        background: rgba(5, 15, 12, 0.98);
         display: none;
         flex-direction: column;
         justify-content: center;
         align-items: center;
-        z-index: 2000;
+        z-index: 3000;
     }
 
     .summary-card {
-        background: #1a2e29;
-        padding: 40px;
-        border-radius: 15px;
+        background: #11221e;
+        padding: 50px;
+        border-radius: 20px;
         border: 2px solid #00ffcc;
-        min-width: 300px;
+        text-align: center;
+        min-width: 350px;
     }
 
-    button {
+    .summary-card button {
         background: #00ffcc;
         border: none;
-        padding: 15px 30px;
-        font-size: 1.2rem;
+        padding: 15px 45px;
+        font-size: 1.1rem;
         font-weight: bold;
-        border-radius: 8px;
+        border-radius: 5px;
         cursor: pointer;
-        margin-top: 20px;
+        margin-top: 25px;
+        transition: 0.2s;
     }
 
-    button:hover { background: #00d4aa; }
-    .fail-text { color: #ff4444; margin-top: 10px; font-weight: bold; }
+    .summary-card button:hover { background: #fff; transform: scale(1.05); }
+    .fail-text { color: #ff4444; font-weight: bold; margin-top: 15px; }
+    .pass-text { color: #00ffcc; font-weight: bold; margin-top: 15px; }
 </style>
 </head>
 <body>
@@ -169,27 +128,34 @@
 <a href="index.html" class="home-button">🏠 Home</a>
 <div id="focus-point"></div>
 
-<div id="ui-layer">
-    <h1>PERIPHERAL VISION TRAINER</h1>
-    <div id="result">GET READY...</div>
-    <div id="stats">Level: 1 | Round: 0/10 | Accuracy: 0%</div>
-    <p class="instruction">Press: (R)ed, (B)lue, (G)reen, (Y)ellow, (O)range</p>
+<div id="round-timer-container">
+    <span class="label">Round Time</span>
+    <div id="round-timer-display" class="timer-val">20.00</div>
 </div>
 
-<div id="stopwatch-container">
-    <div id="stopwatch-display">00:00:00</div>
-    <button class="stopwatch-btn" onclick="startStopwatch()">Start</button>
-    <button class="stopwatch-btn" onclick="stopStopwatch()">Stop</button>
+<div id="session-stopwatch-container">
+    <span class="label">Total Session</span>
+    <div id="session-display" class="timer-val">00:00:00</div>
+</div>
+
+<div id="ui-layer">
+    <div id="result">INITIALIZING...</div>
+    <div id="stats-bar">
+        <span>LVL: <span id="lvl-val">1</span></span>
+        <span>HITS: <span id="hit-val">0</span></span>
+        <span>ACCURACY: <span id="acc-val">0%</span></span>
+    </div>
+    <p style="color: #666; font-size: 12px; margin-top: 10px;">Goal: <span id="goal-val">70</span>% Accuracy to Advance</p>
+</div>
 
 <div id="colorBox"></div>
 
 <div id="summary-overlay">
     <div class="summary-card">
-        <h2 id="summary-title">Level Complete</h2>
-        <p id="summary-stats"></p>
-        <p id="summary-msg"></p>
-        <button id="next-btn" onclick="startNextLevel()">Next Level</button>
-        <button id="retry-btn" onclick="retryLevel()" style="background: #ffaa00; display: none;">Retry Level</button>
+        <h2 id="summary-title">ROUND ENDED</h2>
+        <p id="summary-stats" style="font-size: 1.4rem; line-height: 1.8;"></p>
+        <div id="summary-status-msg"></div>
+        <button id="action-btn" onclick="handleAction()"></button>
     </div>
 </div>
 
@@ -201,193 +167,164 @@ const colors = [
     { name: "yellow", key: "y" },
     { name: "green", key: "g" }
 ];
-// --- STOPWATCH VARIABLES ---
-let startTime;
-let elapsedTime = 0;
-let stopwatchInterval;
-let stopwatchRunning = false;
-const stopwatchDisplay = document.getElementById("stopwatch-display");
 
-// --- STOPWATCH FUNCTIONS ---
-function startStopwatch() {
-    if (!stopwatchRunning) {
-        stopwatchRunning = true;
-        startTime = Date.now() - elapsedTime;
-        stopwatchInterval = setInterval(updateTime, 10);
-    }
-}
-
-function stopStopwatch() {
-    if (stopwatchRunning) {
-        stopwatchRunning = false;
-        clearInterval(stopwatchInterval);
-    }
-}
-
-function updateTime() {
-    elapsedTime = Date.now() - startTime;
-    stopwatchDisplay.textContent = formatTime(elapsedTime);
-}
-
-function formatTime(time) {
-    let milliseconds = Math.floor((time % 1000) / 10);
-    let seconds = Math.floor((time / 1000) % 60);
-    let minutes = Math.floor((time / (1000 * 60)) % 60);
-
-    return (
-        (minutes < 10 ? "0" + minutes : minutes) + ":" +
-        (seconds < 10 ? "0" + seconds : seconds) + ":" +
-        (milliseconds < 10 ? "0" + milliseconds : milliseconds)
-    );
-}
+// Session Stopwatch State
+let sessionStartTime = Date.now();
+setInterval(() => {
+    let elapsed = Date.now() - sessionStartTime;
+    let ms = Math.floor((elapsed % 1000) / 10);
+    let s = Math.floor((elapsed / 1000) % 60);
+    let m = Math.floor((elapsed / 60000) % 60);
+    document.getElementById("session-display").textContent = 
+        `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}:${ms.toString().padStart(2, '0')}`;
+}, 10);
 
 // Game State
 let level = 1;
 let totalCorrect = 0;
 let totalAttempts = 0;
-let roundsPerLevel = 10;
+let gameActive = false;
+let roundTimeLeft = 20.00;
 let canInput = false;
 let currentColor = null;
-let timeoutTracker = null;
+let roundTimerInterval = null;
+let reactionTimeout = null;
+let levelPassed = false;
 
+// Starting Difficulty
 let config = {
-    displayTime: 600,    
-    responseTimeLimit: 600, // 0.6 seconds limit
-    boxSize: 180,        
-    spawnDelay: 1000 
+    boxSize: 140,
+    flashDuration: 400,
+    reactionWindow: 700, // Starts at 0.7s
+    passRate: 0.70       // Starts at 70%
 };
 
 const box = document.getElementById("colorBox");
-const resultEl = document.getElementById("result");
-const statsEl = document.getElementById("stats");
-const summaryOverlay = document.getElementById("summary-overlay");
+const roundDisplay = document.getElementById("round-timer-display");
 
-function updateStats() {
+function updateUI() {
+    document.getElementById("lvl-val").textContent = level;
+    document.getElementById("hit-val").textContent = totalCorrect;
     const acc = totalAttempts ? Math.round((totalCorrect / totalAttempts) * 100) : 0;
-    statsEl.innerHTML = `Level: ${level} | Round: ${totalAttempts}/${roundsPerLevel} | Accuracy: ${acc}%`;
+    document.getElementById("acc-val").textContent = acc + "%";
+    document.getElementById("goal-val").textContent = Math.round(config.passRate * 100);
+}
+
+function startRound() {
+    totalCorrect = 0;
+    totalAttempts = 0;
+    roundTimeLeft = 20.00;
+    gameActive = true;
+    updateUI();
+    
+    roundTimerInterval = setInterval(() => {
+        roundTimeLeft -= 0.01;
+        roundDisplay.textContent = roundTimeLeft.toFixed(2);
+        if (roundTimeLeft <= 0) endRound();
+    }, 10);
+
+    spawnColor();
 }
 
 function spawnColor() {
-    if (totalAttempts >= roundsPerLevel) {
-        showSummary();
-        return;
-    }
+    if (!gameActive) return;
 
     canInput = false;
-    resultEl.textContent = "WATCH...";
-    resultEl.style.color = "white";
-
     currentColor = colors[Math.floor(Math.random() * colors.length)];
+
     box.style.width = config.boxSize + "px";
     box.style.height = config.boxSize + "px";
     box.style.backgroundColor = currentColor.name;
 
-    const padding = 50;
-    const maxX = window.innerWidth - config.boxSize - padding;
-    const maxY = window.innerHeight - config.boxSize - padding;
-    box.style.left = (Math.random() * maxX + padding/2) + "px";
-    box.style.top = (Math.random() * maxY + padding/2) + "px";
+    const pad = 100;
+    const maxX = window.innerWidth - config.boxSize - pad;
+    const maxY = window.innerHeight - config.boxSize - pad;
+    box.style.left = (Math.random() * maxX + pad/2) + "px";
+    box.style.top = (Math.random() * maxY + pad/2) + "px";
 
     setTimeout(() => {
+        if (!gameActive) return;
         box.style.display = "block";
         
         setTimeout(() => {
             box.style.display = "none";
             canInput = true;
-            resultEl.textContent = "TYPE NOW! (0.6s)";
             
-            // Start the 0.6s countdown
-            timeoutTracker = setTimeout(() => {
-                if (canInput) {
-                    handleInput({ key: "timeout" }); 
-                }
-            }, config.responseTimeLimit);
+            reactionTimeout = setTimeout(() => {
+                if (canInput) handleInput({ key: "timeout" });
+            }, config.reactionWindow);
 
-        }, config.displayTime);
-    }, 500); 
+        }, config.flashDuration);
+    }, 500);
 }
 
 function handleInput(e) {
-    if (!canInput) return;
+    if (!canInput || !gameActive) return;
     
-    clearTimeout(timeoutTracker);
+    clearTimeout(reactionTimeout);
     canInput = false;
     totalAttempts++;
 
-    const keyPressed = e.key.toLowerCase();
-    const isCorrect = keyPressed === currentColor.key;
-    
-    if (keyPressed === "timeout") {
-        resultEl.textContent = "⏱ TOO SLOW!";
-        resultEl.style.color = "#ff4444";
-    } else if (isCorrect) {
+    const key = e.key.toLowerCase();
+    const resultEl = document.getElementById("result");
+
+    if (key === currentColor.key) {
         totalCorrect++;
-        resultEl.textContent = "✔ CORRECT";
+        resultEl.textContent = "CORRECT";
         resultEl.style.color = "#00ffcc";
     } else {
-        resultEl.textContent = "✘ WRONG KEY";
+        resultEl.textContent = key === "timeout" ? "TOO SLOW" : "WRONG KEY";
         resultEl.style.color = "#ff4444";
     }
 
-    updateStats();
-    setTimeout(spawnColor, config.spawnDelay);
+    updateUI();
+    spawnColor();
 }
 
-function showSummary() {
-    const accuracy = (totalCorrect / totalAttempts) * 100;
-    const passed = accuracy >= 90;
+function endRound() {
+    gameActive = false;
+    clearInterval(roundTimerInterval);
+    clearTimeout(reactionTimeout);
+    box.style.display = "none";
+    roundDisplay.textContent = "0.00";
 
-    summaryOverlay.style.display = "flex";
-    document.getElementById("summary-title").textContent = passed ? `Level ${level} Cleared!` : `Level ${level} Failed`;
-    document.getElementById("summary-stats").innerHTML = `Accuracy: <b>${Math.round(accuracy)}%</b><br>Correct: ${totalCorrect} / ${totalAttempts}`;
+    const accuracy = totalAttempts ? totalCorrect / totalAttempts : 0;
+    levelPassed = accuracy >= config.passRate;
+
+    const overlay = document.getElementById("summary-overlay");
+    overlay.style.display = "flex";
     
-    const msgEl = document.getElementById("summary-msg");
-    const nextBtn = document.getElementById("next-btn");
-    const retryBtn = document.getElementById("retry-btn");
+    document.getElementById("summary-stats").innerHTML = 
+        `Level ${level}<br>Successful Hits: ${totalCorrect}<br>Accuracy: ${Math.round(accuracy * 100)}%`;
 
-    if (passed) {
-        msgEl.innerHTML = "Great job! Your peripheral focus is sharp.";
-        msgEl.className = "";
-        nextBtn.style.display = "block";
-        retryBtn.style.display = "none";
+    const msg = document.getElementById("summary-status-msg");
+    const btn = document.getElementById("action-btn");
+
+    if (levelPassed) {
+        msg.innerHTML = `<p class="pass-text">PHASE COMPLETE. Standards Met.</p>`;
+        btn.textContent = "Begin Level " + (level + 1);
     } else {
-        msgEl.innerHTML = "Accuracy below 90%. You must repeat this level.";
-        msgEl.className = "fail-text";
-        nextBtn.style.display = "none";
-        retryBtn.style.display = "block";
+        msg.innerHTML = `<p class="fail-text">PHASE FAILED. Required Accuracy: ${Math.round(config.passRate*100)}%</p>`;
+        btn.textContent = "Retry Level " + level;
     }
 }
 
-function startNextLevel() {
-    level++;
-    // Make it harder
-    config.boxSize = Math.max(50, config.boxSize - 20);
-    config.displayTime = Math.max(200, config.displayTime - 50);
-    resetGameState();
-}
-
-function retryLevel() {
-    resetGameState();
-}
-
-function resetGameState() {
-    totalCorrect = 0;
-    totalAttempts = 0;
-    summaryOverlay.style.display = "none";
-    updateStats();
-    spawnColor();
+function handleAction() {
+    if (levelPassed) {
+        level++;
+        // Scale Difficulty
+        config.boxSize = Math.max(45, config.boxSize - 18);
+        config.reactionWindow = Math.max(300, config.reactionWindow - 60);
+        config.passRate = Math.min(0.95, config.passRate + 0.04);
+    }
+    document.getElementById("summary-overlay").style.display = "none";
+    startRound();
 }
 
 document.addEventListener("keydown", handleInput);
 
-// Initial Start
-setTimeout(spawnColor, 1500);
-
-// Start game and stopwatch automatically
-startStopwatch();
-startRound();
-
+// Initial start delay
+setTimeout(startRound, 1500);
 </script>
-
 </body>
 </html>
