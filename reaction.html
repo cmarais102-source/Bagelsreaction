@@ -38,6 +38,43 @@
         letter-spacing: 2px;
     }
 
+    /* STOPWATCH STYLES */
+    #stopwatch-container {
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        background: rgba(0, 0, 0, 0.7);
+        color: #00ffcc;
+        padding: 10px 15px;
+        border-radius: 8px;
+        font-family: 'Courier New', Courier, monospace;
+        font-weight: bold;
+        border: 1px solid #00ffcc;
+        z-index: 2000;
+        text-align: center;
+    }
+
+    #stopwatch-display {
+        font-size: 20px;
+        margin-bottom: 5px;
+    }
+
+    .stopwatch-btn {
+        background: transparent;
+        border: 1px solid #00ffcc;
+        color: #00ffcc;
+        padding: 2px 8px;
+        font-size: 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        margin: 0 2px;
+    }
+
+    .stopwatch-btn:hover {
+        background: #00ffcc;
+        color: black;
+    }
+
     #numberDisplay {
         position: absolute;
         font-size: 70px;
@@ -68,7 +105,12 @@
 </head>
 <body>
 
-<!-- HOME BUTTON -->
+<div id="stopwatch-container">
+    <div id="stopwatch-display">00:00:00</div>
+    <button class="stopwatch-btn" onclick="startStopwatch()">Start</button>
+    <button class="stopwatch-btn" onclick="stopStopwatch()">Stop</button>
+</div>
+
 <a href="index.html" class="home-button">🏠 Home</a>
 
 <h1>🏑 ELITE VISION TRAINER</h1>
@@ -82,6 +124,7 @@
 <div id="stats"></div>
 
 <script>
+// --- GAME VARIABLES ---
 let currentNumber = "";
 let correctStreak = 0;
 let totalCorrect = 0;
@@ -91,6 +134,47 @@ let displayTime = 150;
 let maxDigits = 2;
 let inputStartTime = 0;
 
+// --- STOPWATCH VARIABLES ---
+let startTime;
+let elapsedTime = 0;
+let stopwatchInterval;
+let stopwatchRunning = false;
+const stopwatchDisplay = document.getElementById("stopwatch-display");
+
+// --- STOPWATCH FUNCTIONS ---
+function startStopwatch() {
+    if (!stopwatchRunning) {
+        stopwatchRunning = true;
+        startTime = Date.now() - elapsedTime;
+        stopwatchInterval = setInterval(updateTime, 10);
+    }
+}
+
+function stopStopwatch() {
+    if (stopwatchRunning) {
+        stopwatchRunning = false;
+        clearInterval(stopwatchInterval);
+    }
+}
+
+function updateTime() {
+    elapsedTime = Date.now() - startTime;
+    stopwatchDisplay.textContent = formatTime(elapsedTime);
+}
+
+function formatTime(time) {
+    let milliseconds = Math.floor((time % 1000) / 10);
+    let seconds = Math.floor((time / 1000) % 60);
+    let minutes = Math.floor((time / (1000 * 60)) % 60);
+
+    return (
+        (minutes < 10 ? "0" + minutes : minutes) + ":" +
+        (seconds < 10 ? "0" + seconds : seconds) + ":" +
+        (milliseconds < 10 ? "0" + milliseconds : milliseconds)
+    );
+}
+
+// --- GAME FUNCTIONS ---
 function generateRandomNumber() {
     const length = Math.floor(Math.random() * maxDigits) + 1;
     let number = "";
@@ -104,9 +188,11 @@ function randomPosition(element) {
     const padding = 120;
     const maxX = window.innerWidth - padding;
     const maxY = window.innerHeight - padding;
+    const minX = 50;
+    const minY = 100;
 
-    element.style.left = Math.random() * maxX + "px";
-    element.style.top = Math.random() * maxY + "px";
+    element.style.left = Math.random() * (maxX - minX) + minX + "px";
+    element.style.top = Math.random() * (maxY - minY) + minY + "px";
 }
 
 function increaseDifficulty() {
@@ -135,10 +221,11 @@ function startRound() {
 }
 
 function updateStats(reaction) {
+    let accuracy = totalAttempts > 0 ? Math.round((totalCorrect/totalAttempts)*100) : 0;
     document.getElementById("stats").textContent =
         "Level: " + difficultyLevel +
         " | Streak: " + correctStreak +
-        " | Accuracy: " + Math.round((totalCorrect/totalAttempts)*100) + "%" +
+        " | Accuracy: " + accuracy + "%" +
         " | Display: " + displayTime + "ms" +
         " | Reaction: " + reaction + "ms";
 }
@@ -175,7 +262,10 @@ function checkAnswer() {
     setTimeout(startRound, 800);
 }
 
-setTimeout(startRound, 1000);
+// Start game and stopwatch automatically
+startStopwatch();
+startRound();
+
 </script>
 
 </body>
