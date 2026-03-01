@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Peripheral Training - Time Attack</title>
+<title>Peripheral Training - ELITE Time Attack</title>
 <style>
     body {
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -22,11 +22,12 @@
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        width: 8px;
-        height: 8px;
-        background-color: rgba(0, 255, 204, 0.4);
+        width: 6px;
+        height: 6px;
+        background-color: rgba(0, 255, 204, 0.6);
         border-radius: 50%;
         z-index: 0;
+        box-shadow: 0 0 10px #00ffcc;
     }
 
     /* TOP LEFT: ROUND COUNTDOWN */
@@ -43,7 +44,7 @@
     #session-stopwatch-container {
         position: fixed;
         top: 20px;
-        right: 120px; /* Shifted left to avoid home button overlap */
+        right: 200px; 
         text-align: right;
         z-index: 2000;
         color: #00ffcc;
@@ -66,14 +67,14 @@
     }
 
     #ui-layer { margin-top: 50px; position: relative; z-index: 20; pointer-events: none; }
-    #result { height: 40px; font-size: 28px; font-weight: bold; margin: 15px 0; }
+    #result { height: 40px; font-size: 28px; font-weight: bold; margin: 15px 0; letter-spacing: 1px; }
     
     #stats-bar {
         background: rgba(255, 255, 255, 0.05);
         padding: 12px 30px;
         border-radius: 30px;
         font-family: monospace;
-        border: 1px solid rgba(0, 255, 204, 0.2);
+        border: 1px solid rgba(0, 255, 204, 0.3);
         display: flex;
         gap: 25px;
     }
@@ -81,8 +82,8 @@
     #colorBox {
         position: absolute;
         display: none;
-        border-radius: 6px;
-        box-shadow: 0 0 25px rgba(0,0,0,0.6);
+        border-radius: 4px;
+        box-shadow: 0 0 30px rgba(0,0,0,0.8);
         z-index: 10;
     }
 
@@ -139,7 +140,7 @@
 </div>
 
 <div id="ui-layer">
-    <div id="result">INITIALIZING...</div>
+    <div id="result">EXTREME MODE ACTIVE</div>
     <div id="stats-bar">
         <span>LVL: <span id="lvl-val">1</span></span>
         <span>HITS: <span id="hit-val">0</span></span>
@@ -168,7 +169,6 @@ const colors = [
     { name: "green", key: "g" }
 ];
 
-// Session Stopwatch State
 let sessionStartTime = Date.now();
 setInterval(() => {
     let elapsed = Date.now() - sessionStartTime;
@@ -179,7 +179,6 @@ setInterval(() => {
         `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}:${ms.toString().padStart(2, '0')}`;
 }, 10);
 
-// Game State
 let level = 1;
 let totalCorrect = 0;
 let totalAttempts = 0;
@@ -191,12 +190,13 @@ let roundTimerInterval = null;
 let reactionTimeout = null;
 let levelPassed = false;
 
-// Starting Difficulty
+// EXTREME DIFFICULTY START
 let config = {
-    boxSize: 140,
-    flashDuration: 400,
-    reactionWindow: 700, // Starts at 0.7s
-    passRate: 0.70       // Starts at 70%
+    boxSize: 80,          // Small targets
+    flashDuration: 200,    // Blink speed
+    reactionWindow: 550,   // Tight reaction time
+    passRate: 0.70,
+    spawnDelay: 300        // Fast pacing
 };
 
 const box = document.getElementById("colorBox");
@@ -236,7 +236,7 @@ function spawnColor() {
     box.style.height = config.boxSize + "px";
     box.style.backgroundColor = currentColor.name;
 
-    const pad = 100;
+    const pad = 120;
     const maxX = window.innerWidth - config.boxSize - pad;
     const maxY = window.innerHeight - config.boxSize - pad;
     box.style.left = (Math.random() * maxX + pad/2) + "px";
@@ -255,7 +255,7 @@ function spawnColor() {
             }, config.reactionWindow);
 
         }, config.flashDuration);
-    }, 500);
+    }, config.spawnDelay);
 }
 
 function handleInput(e) {
@@ -270,10 +270,10 @@ function handleInput(e) {
 
     if (key === currentColor.key) {
         totalCorrect++;
-        resultEl.textContent = "CORRECT";
+        resultEl.textContent = "HIT";
         resultEl.style.color = "#00ffcc";
     } else {
-        resultEl.textContent = key === "timeout" ? "TOO SLOW" : "WRONG KEY";
+        resultEl.textContent = key === "timeout" ? "MISSED" : "ERROR";
         resultEl.style.color = "#ff4444";
     }
 
@@ -295,16 +295,16 @@ function endRound() {
     overlay.style.display = "flex";
     
     document.getElementById("summary-stats").innerHTML = 
-        `Level ${level}<br>Successful Hits: ${totalCorrect}<br>Accuracy: ${Math.round(accuracy * 100)}%`;
+        `ELITE LEVEL ${level}<br>Hits: ${totalCorrect}<br>Accuracy: ${Math.round(accuracy * 100)}%`;
 
     const msg = document.getElementById("summary-status-msg");
     const btn = document.getElementById("action-btn");
 
     if (levelPassed) {
-        msg.innerHTML = `<p class="pass-text">PHASE COMPLETE. Standards Met.</p>`;
-        btn.textContent = "Begin Level " + (level + 1);
+        msg.innerHTML = `<p class="pass-text">PHASE CLEAR. Advancing...</p>`;
+        btn.textContent = "Level " + (level + 1);
     } else {
-        msg.innerHTML = `<p class="fail-text">PHASE FAILED. Required Accuracy: ${Math.round(config.passRate*100)}%</p>`;
+        msg.innerHTML = `<p class="fail-text">INSUFFICIENT ACCURACY. Goal: ${Math.round(config.passRate*100)}%</p>`;
         btn.textContent = "Retry Level " + level;
     }
 }
@@ -312,19 +312,17 @@ function endRound() {
 function handleAction() {
     if (levelPassed) {
         level++;
-        // Scale Difficulty
-        config.boxSize = Math.max(45, config.boxSize - 18);
-        config.reactionWindow = Math.max(300, config.reactionWindow - 60);
-        config.passRate = Math.min(0.95, config.passRate + 0.04);
+        config.boxSize = Math.max(30, config.boxSize - 10);
+        config.reactionWindow = Math.max(250, config.reactionWindow - 40);
+        config.flashDuration = Math.max(100, config.flashDuration - 20);
+        config.passRate = Math.min(0.98, config.passRate + 0.04);
     }
     document.getElementById("summary-overlay").style.display = "none";
     startRound();
 }
 
 document.addEventListener("keydown", handleInput);
-
-// Initial start delay
-setTimeout(startRound, 1500);
+setTimeout(startRound, 1000);
 </script>
 </body>
 </html>
