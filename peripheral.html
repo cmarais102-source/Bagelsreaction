@@ -157,7 +157,7 @@
 
 <div id="round-timer-container">
     <span class="label">Round Time</span>
-    <div id="round-timer-display" class="timer-val">20.00</div>
+    <div id="round-timer-display" class="timer-val">15.00</div>
 </div>
 
 <div id="session-stopwatch-container">
@@ -211,7 +211,7 @@ let level = 1;
 let totalCorrect = 0;
 let totalAttempts = 0;
 let gameActive = false;
-let roundTimeLeft = 20.00;
+let roundTimeLeft = 15.00;
 let canInput = false;
 let currentColor = null; 
 let targetColor = null;  
@@ -250,7 +250,7 @@ function beginProtocol() {
 function startRound() {
     totalCorrect = 0;
     totalAttempts = 0;
-    roundTimeLeft = 20.00;
+    roundTimeLeft = 15.00;
     gameActive = true;
     updateUI();
     
