@@ -2,10 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Elite Hockey Reaction Test</title>
+<title>Elite Hockey Reaction Test - Pro Edition</title>
 <style>
     body {
-        font-family: Arial, sans-serif;
+        font-family: 'Segoe UI', Arial, sans-serif;
         background-color: #0b3d2e;
         color: white;
         text-align: center;
@@ -28,17 +28,8 @@
         z-index: 1000;
     }
 
-    .home-button:hover {
-        background-color: white;
-        transform: scale(1.05);
-    }
+    .home-button:hover { background: white; }
 
-    h1 {
-        margin-top: 60px;
-        letter-spacing: 2px;
-    }
-
-    /* STOPWATCH STYLES */
     #stopwatch-container {
         position: fixed;
         top: 20px;
@@ -47,170 +38,157 @@
         color: #00ffcc;
         padding: 10px 15px;
         border-radius: 8px;
-        font-family: 'Courier New', Courier, monospace;
-        font-weight: bold;
+        font-family: 'Courier New', monospace;
         border: 1px solid #00ffcc;
         z-index: 2000;
-        text-align: center;
     }
 
-    #stopwatch-display {
-        font-size: 20px;
-        margin-bottom: 5px;
-    }
-
-    .stopwatch-btn {
-        background: transparent;
-        border: 1px solid #00ffcc;
-        color: #00ffcc;
-        padding: 2px 8px;
-        font-size: 12px;
-        border-radius: 4px;
-        cursor: pointer;
-        margin: 0 2px;
-    }
-
-    .stopwatch-btn:hover {
-        background: #00ffcc;
-        color: black;
-    }
+    h1 { margin-top: 60px; letter-spacing: 2px; text-transform: uppercase; }
 
     #numberDisplay {
         position: absolute;
-        font-size: 70px;
+        font-size: 50px;
         font-weight: bold;
-        color: #00ffcc;
+        color: #ffffff; /* Removed text-shadow glow */
+        pointer-events: none;
     }
 
     #inputBox {
-        font-size: 24px;
-        padding: 10px;
-        width: 220px;
+        font-size: 32px;
+        padding: 15px;
+        width: 250px;
         text-align: center;
         display: none;
-        margin-top: 120px;
+        margin-top: 150px;
+        border: 3px solid #00ffcc;
+        border-radius: 10px;
+        background: #111;
+        color: white;
+        outline: none;
     }
 
-    #result {
-        margin-top: 20px;
-        font-size: 22px;
+    #result { margin-top: 20px; font-size: 28px; font-weight: bold; height: 40px; }
+    
+    #level-progress {
+        font-size: 18px;
+        margin-top: 10px;
+        color: #00ffcc;
         font-weight: bold;
     }
 
-    #stats {
-        margin-top: 20px;
-        font-size: 16px;
+    /* SUMMARY OVERLAY */
+    #summary-overlay {
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.95);
+        display: none;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 3000;
     }
+
+    .summary-box {
+        background: #11221e;
+        padding: 40px;
+        border: 3px solid #00ffcc;
+        border-radius: 20px;
+        min-width: 350px;
+        box-shadow: 0 0 30px rgba(0, 255, 204, 0.2);
+    }
+
+    .summary-box h2 { color: #00ffcc; margin-top: 0; font-size: 32px; }
+    .summary-box p { font-size: 22px; line-height: 1.6; margin: 20px 0; }
+
+    .next-btn {
+        background: #00ffcc;
+        color: black;
+        border: none;
+        padding: 15px 45px;
+        font-size: 22px;
+        font-weight: bold;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+
+    .next-btn:hover { background: white; transform: scale(1.05); }
 </style>
 </head>
 <body>
 
 <div id="stopwatch-container">
     <div id="stopwatch-display">00:00:00</div>
-    <button class="stopwatch-btn" onclick="startStopwatch()">Start</button>
-    <button class="stopwatch-btn" onclick="stopStopwatch()">Stop</button>
 </div>
 
 <a href="index.html" class="home-button">🏠 Home</a>
 
 <h1>🏑 ELITE VISION TRAINER</h1>
+<div id="level-progress">LEVEL 1 | Number: 1 / 10</div>
 
 <div id="numberDisplay"></div>
 
-<br>
-<input type="text" id="inputBox" placeholder="Enter number" autocomplete="off">
+<input type="number" id="inputBox" placeholder="?" autocomplete="off">
 
 <div id="result"></div>
-<div id="stats"></div>
+
+<div id="summary-overlay">
+    <div class="summary-box">
+        <h2 id="stat-title">YOUR STATS</h2>
+        <p id="stat-details"></p>
+        <button id="next-btn" class="next-btn" onclick="nextLevel()">NEXT LEVEL</button>
+    </div>
+</div>
 
 <script>
-// --- GAME VARIABLES ---
+let level = 1;
+let roundInLevel = 0;
+let correctInLevel = 0;
 let currentNumber = "";
-let correctStreak = 0;
-let totalCorrect = 0;
-let totalAttempts = 0;
-let difficultyLevel = 1;
-let displayTime = 150;
-let maxDigits = 2;
+let displayTime = 300; // Start at 300ms as requested
 let inputStartTime = 0;
 
-// --- STOPWATCH VARIABLES ---
-let startTime;
-let elapsedTime = 0;
-let stopwatchInterval;
-let stopwatchRunning = false;
-const stopwatchDisplay = document.getElementById("stopwatch-display");
+// Stopwatch Logic
+let startTime = Date.now();
+setInterval(() => {
+    let elapsed = Date.now() - startTime;
+    let ms = Math.floor((elapsed % 1000) / 10);
+    let s = Math.floor((elapsed / 1000) % 60);
+    let m = Math.floor((elapsed / 60000) % 60);
+    document.getElementById("stopwatch-display").textContent = 
+        `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}:${ms.toString().padStart(2,'0')}`;
+}, 10);
 
-// --- STOPWATCH FUNCTIONS ---
-function startStopwatch() {
-    if (!stopwatchRunning) {
-        stopwatchRunning = true;
-        startTime = Date.now() - elapsedTime;
-        stopwatchInterval = setInterval(updateTime, 10);
-    }
-}
-
-function stopStopwatch() {
-    if (stopwatchRunning) {
-        stopwatchRunning = false;
-        clearInterval(stopwatchInterval);
-    }
-}
-
-function updateTime() {
-    elapsedTime = Date.now() - startTime;
-    stopwatchDisplay.textContent = formatTime(elapsedTime);
-}
-
-function formatTime(time) {
-    let milliseconds = Math.floor((time % 1000) / 10);
-    let seconds = Math.floor((time / 1000) % 60);
-    let minutes = Math.floor((time / (1000 * 60)) % 60);
-
-    return (
-        (minutes < 10 ? "0" + minutes : minutes) + ":" +
-        (seconds < 10 ? "0" + seconds : seconds) + ":" +
-        (milliseconds < 10 ? "0" + milliseconds : milliseconds)
-    );
-}
-
-// --- GAME FUNCTIONS ---
-function generateRandomNumber() {
-    const length = Math.floor(Math.random() * maxDigits) + 1;
-    let number = "";
-    for (let i = 0; i < length; i++) {
-        number += Math.floor(Math.random() * 10);
-    }
-    return number;
-}
-
-function randomPosition(element) {
-    const padding = 120;
-    const maxX = window.innerWidth - padding;
-    const maxY = window.innerHeight - padding;
-    const minX = 50;
-    const minY = 100;
-
-    element.style.left = Math.random() * (maxX - minX) + minX + "px";
-    element.style.top = Math.random() * (maxY - minY) + minY + "px";
-}
-
-function increaseDifficulty() {
-    difficultyLevel++;
-    maxDigits++;
-    displayTime = Math.max(60, displayTime - 15);
+function generateNumber() {
+    let num = "";
+    // Scales digits: Lvl 1-2 = 2 digits, Lvl 3-4 = 3 digits, etc.
+    let digits = Math.floor(level/2) + 2; 
+    for(let i=0; i<digits; i++) num += Math.floor(Math.random()*10);
+    return num;
 }
 
 function startRound() {
+    if (roundInLevel >= 10) {
+        showLevelSummary();
+        return;
+    }
+
+    roundInLevel++;
+    document.getElementById("level-progress").textContent = `LEVEL ${level} | Number: ${roundInLevel} / 10`;
     document.getElementById("result").textContent = "";
     document.getElementById("inputBox").value = "";
     document.getElementById("inputBox").style.display = "none";
 
-    currentNumber = generateRandomNumber();
+    currentNumber = generateNumber();
     const display = document.getElementById("numberDisplay");
-
     display.textContent = currentNumber;
-    randomPosition(display);
+    
+    // Random position within safe screen area
+    const pad = 200;
+    const maxX = window.innerWidth - pad;
+    const maxY = window.innerHeight - pad;
+    display.style.left = (Math.random() * maxX + pad/4) + "px";
+    display.style.top = (Math.random() * maxY + pad/2) + "px";
 
     setTimeout(() => {
         display.textContent = "";
@@ -220,53 +198,68 @@ function startRound() {
     }, displayTime);
 }
 
-function updateStats(reaction) {
-    let accuracy = totalAttempts > 0 ? Math.round((totalCorrect/totalAttempts)*100) : 0;
-    document.getElementById("stats").textContent =
-        "Level: " + difficultyLevel +
-        " | Streak: " + correctStreak +
-        " | Accuracy: " + accuracy + "%" +
-        " | Display: " + displayTime + "ms" +
-        " | Reaction: " + reaction + "ms";
-}
-
 document.getElementById("inputBox").addEventListener("keydown", function(e) {
     if (e.key === "Enter") checkAnswer();
 });
 
 function checkAnswer() {
-    const userAnswer = document.getElementById("inputBox").value.trim();
-    const reaction = Date.now() - inputStartTime;
+    if (document.getElementById("inputBox").style.display === "none") return;
 
-    totalAttempts++;
-
-    if (userAnswer === currentNumber) {
-        totalCorrect++;
-        correctStreak++;
-        document.getElementById("result").textContent = "🔥 CLEAN TOUCH";
-        document.getElementById("result").style.color = "#00ffcc";
+    const userVal = document.getElementById("inputBox").value;
+    const resultEl = document.getElementById("result");
+    
+    if (userVal === currentNumber) {
+        correctInLevel++;
+        resultEl.textContent = "✔ CLEAN TOUCH";
+        resultEl.style.color = "#00ffcc";
     } else {
-        correctStreak = 0;
-        document.getElementById("result").textContent =
-            "❌ Turnover (Was " + currentNumber + ")";
-        document.getElementById("result").style.color = "red";
+        resultEl.textContent = `✘ TURNOVER (Was ${currentNumber})`;
+        resultEl.style.color = "#ff4444";
     }
 
-    if (correctStreak > 0 && correctStreak % 3 === 0) {
-        increaseDifficulty();
-        document.getElementById("result").textContent += " | LEVEL UP ⚡";
-    }
-
-    updateStats(reaction);
-
-    setTimeout(startRound, 800);
+    // Extended review time (1.2s) to see the result clearly
+    setTimeout(startRound, 1200); 
 }
 
-// Start game and stopwatch automatically
-startStopwatch();
+function showLevelSummary() {
+    const overlay = document.getElementById("summary-overlay");
+    const details = document.getElementById("stat-details");
+    const title = document.getElementById("stat-title");
+    const btn = document.getElementById("next-btn");
+
+    overlay.style.display = "flex";
+    const accuracy = correctInLevel * 10;
+    const pass = correctInLevel >= 8;
+
+    if (pass) {
+        title.textContent = "LEVEL COMPLETE";
+        title.style.color = "#00ffcc";
+        details.innerHTML = `Score: ${correctInLevel}/10<br>Accuracy: ${accuracy}%<br>Speed: ${displayTime}ms<br><br><b>Status: PROMOTED</b>`;
+        btn.textContent = "START LEVEL " + (level + 1);
+    } else {
+        title.textContent = "LEVEL FAILED";
+        title.style.color = "#ff4444";
+        details.innerHTML = `Score: ${correctInLevel}/10<br>Accuracy: ${accuracy}%<br><br><i>Min. Required: 8/10 to advance.</i>`;
+        btn.textContent = "RETRY LEVEL " + level;
+    }
+}
+
+function nextLevel() {
+    if (correctInLevel >= 8) {
+        level++;
+        // Reduces by 30ms per level passed
+        displayTime = Math.max(60, displayTime - 30); 
+    }
+    
+    // Reset round counters
+    roundInLevel = 0;
+    correctInLevel = 0;
+    document.getElementById("summary-overlay").style.display = "none";
+    startRound();
+}
+
+// Initial start
 startRound();
-
 </script>
-
 </body>
 </html>
