@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Peripheral Training - ELITE Time Attack</title>
+<title>Peripheral Training - ELITE Discrimination</title>
 <style>
     body {
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -30,7 +30,6 @@
         box-shadow: 0 0 10px #00ffcc;
     }
 
-    /* TOP LEFT: ROUND COUNTDOWN */
     #round-timer-container {
         position: fixed;
         top: 20px;
@@ -40,7 +39,6 @@
         color: #ff4444;
     }
 
-    /* TOP RIGHT: SESSION STOPWATCH */
     #session-stopwatch-container {
         position: fixed;
         top: 20px;
@@ -77,18 +75,26 @@
         border: 1px solid rgba(0, 255, 204, 0.3);
         display: flex;
         gap: 25px;
-        pointer-events: auto; /* Allow interaction */
+        pointer-events: auto;
     }
 
-    #colorBox {
+    #box-container {
         position: absolute;
-        display: none;
-        border-radius: 4px;
-        box-shadow: 0 0 30px rgba(0,0,0,0.8);
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
+        pointer-events: none;
         z-index: 10;
     }
 
-    /* Start Button Styling */
+    .colorBox {
+        position: absolute;
+        display: none;
+        border-radius: 4px;
+        box-shadow: 0 0 20px rgba(0,0,0,0.8);
+    }
+
     #start-btn {
         background: #00ffcc;
         border: none;
@@ -141,6 +147,7 @@
     .summary-card button:hover { background: #fff; transform: scale(1.05); }
     .fail-text { color: #ff4444; font-weight: bold; margin-top: 15px; }
     .pass-text { color: #00ffcc; font-weight: bold; margin-top: 15px; }
+    .info-text { color: white; font-size: 1.2rem; margin-bottom: 20px; line-height: 1.6; }
 </style>
 </head>
 <body>
@@ -166,10 +173,10 @@
         <span>ACCURACY: <span id="acc-val">0%</span></span>
     </div>
     <p style="color: #666; font-size: 12px; margin-top: 10px;">Goal: <span id="goal-val">70</span>% Accuracy to Advance</p>
-    <button id="start-btn" onclick="beginProtocol()">BEGIN TEST</button>
+    <button id="start-btn" onclick="beginProtocol()">BEGIN TRAINING</button>
 </div>
 
-<div id="colorBox"></div>
+<div id="box-container"></div>
 
 <div id="summary-overlay">
     <div class="summary-card">
@@ -184,12 +191,10 @@
 const colors = [
     { name: "red", key: "r" },
     { name: "blue", key: "b" },
-    { name: "orange", key: "o" },
     { name: "yellow", key: "y" },
     { name: "green", key: "g" }
 ];
 
-// Session Stopwatch Logic
 let sessionStartTime = Date.now();
 let sessionRunning = false;
 setInterval(() => {
@@ -202,28 +207,29 @@ setInterval(() => {
         `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}:${ms.toString().padStart(2, '0')}`;
 }, 10);
 
-// Game State
 let level = 1;
 let totalCorrect = 0;
 let totalAttempts = 0;
 let gameActive = false;
 let roundTimeLeft = 20.00;
 let canInput = false;
-let currentColor = null;
+let currentColor = null; 
+let targetColor = null;  
 let roundTimerInterval = null;
 let reactionTimeout = null;
 let levelPassed = false;
+let showInfoScreenNext = false;
 
-// EXTREME DIFFICULTY START
 let config = {
-    boxSize: 80,          
-    flashDuration: 200,    
-    reactionWindow: 550,   
+    boxSize: 130,          
+    flashDuration: 400,    
+    reactionWindow: 750,   
     passRate: 0.70,
-    spawnDelay: 300        
+    spawnDelay: 400,
+    pairCount: 1 
 };
 
-const box = document.getElementById("colorBox");
+const boxContainer = document.getElementById("box-container");
 const roundDisplay = document.getElementById("round-timer-display");
 const startBtn = document.getElementById("start-btn");
 
@@ -235,7 +241,6 @@ function updateUI() {
     document.getElementById("goal-val").textContent = Math.round(config.passRate * 100);
 }
 
-// Start Function triggered by button
 function beginProtocol() {
     startBtn.style.display = 'none';
     sessionRunning = true;
@@ -262,24 +267,35 @@ function spawnColor() {
     if (!gameActive) return;
 
     canInput = false;
-    currentColor = colors[Math.floor(Math.random() * colors.length)];
+    boxContainer.innerHTML = ''; 
 
-    box.style.width = config.boxSize + "px";
-    box.style.height = config.boxSize + "px";
-    box.style.backgroundColor = currentColor.name;
+    if (level < 4) {
+        currentColor = colors[Math.floor(Math.random() * colors.length)];
+        createBox(currentColor.name, config.boxSize);
+    } else {
+        const allColors = [...colors];
+        const targetIdx = Math.floor(Math.random() * allColors.length);
+        targetColor = allColors[targetIdx];
+        createBox(targetColor.name, config.boxSize);
+        allColors.splice(targetIdx, 1); 
 
-    const pad = 120;
-    const maxX = window.innerWidth - config.boxSize - pad;
-    const maxY = window.innerHeight - config.boxSize - pad;
-    box.style.left = (Math.random() * maxX + pad/2) + "px";
-    box.style.top = (Math.random() * maxY + pad/2) + "px";
+        for (let i = 0; i < config.pairCount; i++) {
+            const fillerIdx = Math.floor(Math.random() * allColors.length);
+            const fillerColor = allColors[fillerIdx];
+            createBox(fillerColor.name, config.boxSize);
+            createBox(fillerColor.name, config.boxSize);
+            allColors.splice(fillerIdx, 1); 
+        }
+    }
 
     setTimeout(() => {
         if (!gameActive) return;
-        box.style.display = "block";
+        const boxes = document.querySelectorAll('.colorBox');
+        boxes.forEach(b => b.style.display = 'block');
         
         setTimeout(() => {
-            box.style.display = "none";
+            const boxes = document.querySelectorAll('.colorBox');
+            boxes.forEach(b => b.style.display = 'none');
             canInput = true;
             
             reactionTimeout = setTimeout(() => {
@@ -288,6 +304,22 @@ function spawnColor() {
 
         }, config.flashDuration);
     }, config.spawnDelay);
+}
+
+function createBox(colorName, size) {
+    const box = document.createElement('div');
+    box.className = 'colorBox';
+    box.style.width = size + 'px';
+    box.style.height = size + 'px';
+    box.style.backgroundColor = colorName;
+
+    const pad = 150;
+    const maxX = window.innerWidth - size - pad;
+    const maxY = window.innerHeight - size - pad;
+    box.style.left = (Math.random() * maxX + pad/2) + 'px';
+    box.style.top = (Math.random() * maxY + pad/2) + 'px';
+    
+    boxContainer.appendChild(box);
 }
 
 function handleInput(e) {
@@ -299,8 +331,10 @@ function handleInput(e) {
 
     const key = e.key.toLowerCase();
     const resultEl = document.getElementById("result");
+    
+    const correctKey = (level < 4) ? currentColor.key : targetColor.key;
 
-    if (key === currentColor.key) {
+    if (key === correctKey) {
         totalCorrect++;
         resultEl.textContent = "HIT";
         resultEl.style.color = "#00ffcc";
@@ -317,7 +351,7 @@ function endRound() {
     gameActive = false;
     clearInterval(roundTimerInterval);
     clearTimeout(reactionTimeout);
-    box.style.display = "none";
+    boxContainer.innerHTML = '';
     roundDisplay.textContent = "0.00";
 
     const accuracy = totalAttempts ? totalCorrect / totalAttempts : 0;
@@ -327,7 +361,7 @@ function endRound() {
     overlay.style.display = "flex";
     
     document.getElementById("summary-stats").innerHTML = 
-        `ELITE LEVEL ${level}<br>Hits: ${totalCorrect}<br>Accuracy: ${Math.round(accuracy * 100)}%`;
+        `LEVEL ${level}<br>Hits: ${totalCorrect}<br>Accuracy: ${Math.round(accuracy * 100)}%`;
 
     const msg = document.getElementById("summary-status-msg");
     const btn = document.getElementById("action-btn");
@@ -335,22 +369,63 @@ function endRound() {
     if (levelPassed) {
         msg.innerHTML = `<p class="pass-text">PHASE CLEAR. Advancing...</p>`;
         btn.textContent = "Level " + (level + 1);
+        showInfoScreenNext = (level === 3); 
     } else {
         msg.innerHTML = `<p class="fail-text">INSUFFICIENT ACCURACY. Goal: ${Math.round(config.passRate*100)}%</p>`;
         btn.textContent = "Retry Level " + level;
+        showInfoScreenNext = false;
     }
 }
 
 function handleAction() {
     if (levelPassed) {
         level++;
-        config.boxSize = Math.max(30, config.boxSize - 10);
-        config.reactionWindow = Math.max(250, config.reactionWindow - 40);
-        config.flashDuration = Math.max(100, config.flashDuration - 20);
-        config.passRate = Math.min(0.98, config.passRate + 0.04);
+        
+        if (level === 2) {
+            config.boxSize = 100;
+            config.reactionWindow = 650;
+        } else if (level === 3) {
+            config.boxSize = 80;
+            config.reactionWindow = 550;
+            config.flashDuration = 300;
+        } else if (level === 4) {
+            config.pairCount = 1; 
+            config.boxSize = 100;
+            config.flashDuration = 500;
+            config.reactionWindow = 1200;
+            config.spawnDelay = 500;
+        } else if (level === 5) {
+            config.pairCount = 2; 
+            config.boxSize = 80;
+            config.flashDuration = 400;
+            config.reactionWindow = 1000;
+        } else if (level > 5) {
+            config.pairCount = Math.min(4, config.pairCount + 1);
+            config.boxSize = Math.max(30, config.boxSize - 10);
+            config.flashDuration = Math.max(150, config.flashDuration - 50);
+            config.reactionWindow = Math.max(500, config.reactionWindow - 100);
+        }
+        
+        config.passRate = Math.min(0.98, config.passRate + 0.05);
     }
+    
     document.getElementById("summary-overlay").style.display = "none";
-    startRound();
+    
+    if (showInfoScreenNext) {
+        showInfoScreen();
+    } else {
+        startRound();
+    }
+}
+
+function showInfoScreen() {
+    const overlay = document.getElementById("summary-overlay");
+    overlay.style.display = "flex";
+    document.getElementById("summary-title").textContent = "PROTOCOL CHANGE";
+    document.getElementById("summary-stats").innerHTML = "<p class='info-text'>Now multiple coloured boxes will appear.<br><br><b>Click the colour that only has one box.</b></p>";
+    document.getElementById("summary-status-msg").innerHTML = "";
+    document.getElementById("action-btn").textContent = "Begin Discrimination Phase";
+    showInfoScreenNext = false; 
 }
 
 document.addEventListener("keydown", handleInput);
