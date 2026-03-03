@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Elite Summation Drill - Pro Edition</title>
+<style>
+    body {
+        font-family: 'Segoe UI', Arial, sans-serif;
+        background-color: #050f0c;
+        color: white;
+        text-align: center;
+        overflow: hidden;
+        margin: 0;
+        height: 100vh;
+        transition: background-color 0.3s;
+    }
+
+    .home-button {
+        position: fixed; top: 20px; right: 20px;
+        background-color: #00ffcc; color: black;
+        padding: 10px 15px; text-decoration: none;
+        font-weight: bold; border-radius: 8px; z-index: 1000;
+    }
+
+    #header-info { margin-top: 40px; z-index: 10; }
+
+    #target-display {
+        font-size: 24px; font-weight: bold; padding: 10px 20px;
+        border-radius: 10px; display: inline-block;
+        border: 2px solid white; margin-bottom: 20px;
+        transition: all 0.3s;
+    }
+
+    #game-container { position: relative; width: 100vw; height: 60vh; }
+
+    .number-node {
+        position: absolute; font-size: 50px;
+        font-weight: bold; pointer-events: none;
+    }
+
+    /* INPUT OVERLAY */
+    #input-overlay {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(5, 15, 12, 0.98);
+        display: none; flex-direction: column;
+        justify-content: center; align-items: center; z-index: 2000;
+    }
+
+    #sum-input {
+        font-size: 48px; padding: 10px; width: 220px;
+        text-align: center; background: #111; color: #00ffcc;
+        border: 3px solid #00ffcc; border-radius: 10px;
+        outline: none; margin-bottom: 20px;
+    }
+
+    .shake { animation: shake 0.4s; }
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-10px); }
+        75% { transform: translateX(10px); }
+    }
+
+    .action-btn {
+        background: #00ffcc; color: black; border: none;
+        padding: 15px 40px; font-size: 20px; font-weight: bold;
+        border-radius: 10px; cursor: pointer; transition: 0.2s;
+    }
+
+    .action-btn:hover { background: white; transform: scale(1.05); }
+    .retry-btn { background: #ff4444; color: white; }
+
+    #result-msg { font-size: 28px; margin-bottom: 20px; font-weight: bold; }
+    .status-text { color: #aaa; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px;}
+</style>
+</head>
+<body>
+
+<a href="index.html" class="home-button">🏠 Home</a>
+
+<div id="header-info">
+    <h1>SUMMATION DRILL</h1>
+    <div id="target-display">TARGET COLOR: <span id="color-name">???</span></div>
+    <div id="level-text" style="color: #00ffcc; margin-top:10px;">LEVEL 1</div>
+</div>
+
+<div id="game-container">
+    <div style="margin-top: 100px;">
+        <p id="instruction-text">Memorize the numbers in the target color.</p>
+        <button id="start-btn" class="action-btn" onclick="startSequence()">BEGIN TEST</button>
+    </div>
+</div>
+
+<div id="input-overlay">
+    <div id="result-msg"></div>
+    <p class="status-text">Mental Math Check</p>
+    <input type="number" id="sum-input" placeholder="Sum?" autocomplete="off">
+    
+    <div id="overlay-buttons">
+        <button id="submit-btn" class="action-btn" onclick="checkSum()">SUBMIT</button>
+        <button id="next-lvl-btn" class="action-btn" onclick="setupLevel('next')" style="display:none;">NEXT LEVEL</button>
+        <button id="retry-lvl-btn" class="action-btn retry-btn" onclick="setupLevel('retry')" style="display:none;">TRY AGAIN</button>
+    </div>
+</div>
+
+<script>
+    const colors = [
+        { name: "RED", value: "#ff4444" },
+        { name: "GREEN", value: "#00ff88" },
+        { name: "BLUE", value: "#44aaff" },
+        { name: "YELLOW", value: "#ffff44" }
+    ];
+
+    let level = 1;
+    let targetColor = {};
+    let runningSum = 0;
+    let flashCount = 0;
+    let maxFlashes = 3; 
+    let displayTime = 400; // Starting Level 1 speed
+
+    function setupLevel(mode) {
+        if (mode === 'next') level++;
+        
+        document.body.style.backgroundColor = "#050f0c";
+        document.getElementById("input-overlay").style.display = "none";
+        document.getElementById("game-container").innerHTML = '<div style="margin-top: 100px;"><p id="instruction-text">Memorize the numbers in the target color.</p><button id="start-btn" class="action-btn" onclick="startSequence()">BEGIN TEST</button></div>';
+        document.getElementById("sum-input").classList.remove("shake");
+        
+        document.getElementById("submit-btn").style.display = "inline-block";
+        document.getElementById("next-lvl-btn").style.display = "none";
+        document.getElementById("retry-lvl-btn").style.display = "none";
+        
+        runningSum = 0;
+        flashCount = 0;
+
+        // Difficulty Scaling: maxFlashes
+        if (level <= 2) {
+            maxFlashes = 3;
+        } else {
+            maxFlashes = Math.min(8, 3 + (level - 2)); 
+        }
+        
+        // Difficulty Scaling: displayTime
+        if (level === 1) displayTime = 400;
+        else if (level === 2) displayTime = 350;
+        else displayTime = Math.max(100, 350 - ((level - 2) * 20));
+
+        targetColor = colors[Math.floor(Math.random() * colors.length)];
+        const targetEl = document.getElementById("target-display");
+        targetEl.style.borderColor = targetColor.value;
+        targetEl.style.color = targetColor.value;
+        document.getElementById("color-name").textContent = targetColor.name;
+        document.getElementById("level-text").textContent = "LEVEL " + level;
+    }
+
+    function startSequence() {
+        document.getElementById("game-container").innerHTML = "";
+        setTimeout(nextFlash, 500);
+    }
+
+    function nextFlash() {
+        if (flashCount >= maxFlashes) {
+            showInput();
+            return;
+        }
+
+        const container = document.getElementById("game-container");
+        container.innerHTML = "";
+        
+        const targetNum = Math.floor(Math.random() * 9) + 1;
+        runningSum += targetNum;
+
+        createNode(targetNum, targetColor.value);
+
+        const distractorCount = 2 + Math.floor(level/2);
+        for(let i=0; i < distractorCount; i++) {
+            let randColor;
+            do { randColor = colors[Math.floor(Math.random() * colors.length)]; } 
+            while (randColor.value === targetColor.value);
+            createNode(Math.floor(Math.random() * 9) + 1, randColor.value);
+        }
+
+        flashCount++;
+        setTimeout(() => {
+            container.innerHTML = "";
+            setTimeout(nextFlash, 600);
+        }, displayTime);
+    }
+
+    function createNode(text, color) {
+        const node = document.createElement("div");
+        node.className = "number-node";
+        node.textContent = text;
+        node.style.color = color;
+        const x = Math.random() * (window.innerWidth - 100) + 50;
+        const y = Math.random() * (window.innerHeight * 0.5) + 50;
+        node.style.left = x + "px";
+        node.style.top = y + "px";
+        document.getElementById("game-container").appendChild(node);
+    }
+
+    function showInput() {
+        document.getElementById("input-overlay").style.display = "flex";
+        document.getElementById("sum-input").value = "";
+        document.getElementById("sum-input").focus();
+        document.getElementById("result-msg").textContent = "";
+    }
+
+    function checkSum() {
+        const userVal = parseInt(document.getElementById("sum-input").value);
+        const msg = document.getElementById("result-msg");
+        const inputField = document.getElementById("sum-input");
+        
+        if (userVal === runningSum) {
+            msg.textContent = "✔ CLEAN TOUCH! SUM WAS " + runningSum;
+            msg.style.color = "#00ffcc";
+            document.getElementById("submit-btn").style.display = "none";
+            document.getElementById("next-lvl-btn").style.display = "inline-block";
+        } else {
+            document.body.style.backgroundColor = "#220505";
+            inputField.classList.add("shake");
+            msg.textContent = "✘ TURNOVER. SUM WAS " + runningSum;
+            msg.style.color = "#ff4444";
+            document.getElementById("submit-btn").style.display = "none";
+            document.getElementById("retry-lvl-btn").style.display = "inline-block";
+            setTimeout(() => inputField.classList.remove("shake"), 400);
+        }
+    }
+
+    document.getElementById("sum-input").addEventListener("keydown", (e) => {
+        if(e.key === "Enter") checkSum();
+    });
+
+    setupLevel('start');
+</script>
+</body>
+</html>
