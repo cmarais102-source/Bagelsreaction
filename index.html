@@ -10,6 +10,7 @@
         background: linear-gradient(135deg, #0b3d2e, #000);
         color: white;
         text-align: center;
+        min-height: 100vh;
     }
 
     h1 {
@@ -57,46 +58,54 @@
         color: #aaa;
     }
 
+    /* GLOBAL PERSISTENT STOPWATCH - POSITIONED BOTTOM LEFT */
+    #global-timer-container {
+        position: fixed;
+        bottom: 20px;
+        left: 20px; /* Moved to left */
+        background: rgba(0, 0, 0, 0.85);
+        padding: 15px;
+        border: 2px solid #00ffcc;
+        border-radius: 12px;
+        z-index: 9999;
+        font-family: 'Courier New', monospace;
+        text-align: center;
+        box-shadow: 0 0 15px rgba(0, 255, 204, 0.3);
+    }
+
+    #timer-display {
+        font-size: 28px;
+        color: #00ffcc;
+        margin-bottom: 10px;
+        font-weight: bold;
+    }
+
+    .timer-btn {
+        padding: 6px 12px;
+        margin: 2px;
+        cursor: pointer;
+        font-weight: bold;
+        border-radius: 6px;
+        border: none;
+        transition: 0.2s;
+    }
+
+    #start-stop-timer { background: #00ffcc; color: black; }
+    #reset-timer { background: #ff4444; color: white; }
+
     footer {
         margin-top: 60px;
+        padding-bottom: 40px;
         font-size: 14px;
         color: #555;
     }
-    footer {
-            .footer-logo img {
-        height: 300px;
+
+    .footer-logo img {
+        height: 150px; /* Adjusted height for better layout */
         width: auto; 
         filter: drop-shadow(0 0 10px rgba(0, 255, 204, 0.3));
+        margin-top: 20px;
     }
-    #global-timer-container {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    background: rgba(0, 0, 0, 0.8);
-    padding: 15px;
-    border: 2px solid #00ffcc;
-    border-radius: 12px;
-    z-index: 9999;
-    font-family: 'Courier New', monospace;
-    text-align: center;
-}
-#timer-display {
-    font-size: 28px;
-    color: #00ffcc;
-    margin-bottom: 10px;
-    font-weight: bold;
-}
-.timer-btn {
-    padding: 5px 10px;
-    margin: 2px;
-    cursor: pointer;
-    font-weight: bold;
-    border-radius: 4px;
-    border: none;
-}
-#start-stop-timer { background: #00ffcc; color: black; }
-#reset-timer { background: #ff4444; color: white; }
-
 </style>
 </head>
 <body>
@@ -105,7 +114,6 @@
 <p>Select your training module</p>
 
 <div class="container">
-
     <div class="card" onclick="location.href='reaction.html'">
         <h2>⚡ Reaction Number Test</h2>
         <p>Ultra-fast visual recall. Progressive difficulty mode.</p>
@@ -123,18 +131,25 @@
 
     <div class="card" onclick="location.href='addition.html'">
         <h2>🔥 Quick Thinking </h2>
-        <p>Be able to memorise and add all the numbers of the target colour</p>
+        <p>Memorize and add target color numbers.</p>
     </div>
-    
-    <div id="global-timer-container">
+</div>
+
+<div id="global-timer-container">
     <div id="timer-display">00:00:00</div>
     <button id="start-stop-timer" class="timer-btn">START</button>
     <button id="reset-timer" class="timer-btn">RESET</button>
 </div>
 
-</div>
+<footer>
+    Built for high-performance athletes 🧠⚡
+    <div class="footer-logo">
+        <img src="ProLeague 26-02-20 AUS - ESP 016.jpeg" alt="Elite Hockey Logo">
+    </div>
+</footer>
 
-<script>let timerInterval;
+<script>
+let timerInterval;
 let isRunning = false;
 
 const display = document.getElementById('timer-display');
@@ -159,22 +174,16 @@ function updateDisplay() {
 
 startBtn.addEventListener('click', () => {
     if (!isRunning) {
-        // Start or Resume
-        let savedTime = localStorage.getItem('globalStartTime');
-        if (!savedTime) {
+        if (!localStorage.getItem('globalStartTime')) {
             localStorage.setItem('globalStartTime', Date.now());
         }
         timerInterval = setInterval(updateDisplay, 10);
         startBtn.textContent = "STOP";
         isRunning = true;
     } else {
-        // Stop (Pause)
         clearInterval(timerInterval);
         startBtn.textContent = "START";
         isRunning = false;
-        // Optional: If you want it to truly "Stop" and stay there, 
-        // you'd need to save the elapsed time. For a total session timer, 
-        // most users just leave it running across tests.
     }
 });
 
@@ -194,10 +203,5 @@ if (localStorage.getItem('globalStartTime')) {
 }
 </script>
 
-<footer>
-Built for high-performance athletes 🧠⚡
-<footer class="footer-logo">
-    <img src="ProLeague 26-02-20 AUS - ESP 016.jpeg" alt="Elite Hockey Logo">
-</footer>
 </body>
 </html>
