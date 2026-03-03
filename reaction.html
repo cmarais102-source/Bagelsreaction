@@ -126,7 +126,7 @@
 <a href="index.html" class="home-button">🏠 Home</a>
 
 <h1>🏑 ELITE VISION TRAINER</h1>
-<div id="level-progress">LEVEL 1 | Number: 1 / 10</div>
+<div id="level-progress">LEVEL 1 | Number: 1 / 8</div>
 
 <div id="numberDisplay"></div>
 
@@ -154,29 +154,42 @@ let inputStartTime = 0;
 let startTime = Date.now();
 setInterval(() => {
     let elapsed = Date.now() - startTime;
-    let ms = Math.floor((elapsed % 1000) / 10);
+    let ms = Math.floor((elapsed % 1000) / 8);
     let s = Math.floor((elapsed / 1000) % 60);
-    let m = Math.floor((elapsed / 60000) % 60);
+    let m = Math.floor((elapsed / (1000 * 60)) % 60);
     document.getElementById("stopwatch-display").textContent = 
         `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}:${ms.toString().padStart(2,'0')}`;
-}, 10);
+}, 8);
 
+// --- UPDATED DIGIT LOGIC ---
 function generateNumber() {
+    let minDigits, maxDigits;
+    
+    if (level <= 2) {
+        minDigits = 1;
+        maxDigits = 2;
+    } else if (level <= 4) {
+        minDigits = 1;
+        maxDigits = 3;
+    } else {
+        minDigits = 2;
+        maxDigits = 4;
+    }
+    
+    const numDigits = Math.floor(Math.random() * (maxDigits - minDigits + 1)) + minDigits;
     let num = "";
-    // Scales digits: Lvl 1-2 = 2 digits, Lvl 3-4 = 3 digits, etc.
-    let digits = Math.floor(level/2) + 2; 
-    for(let i=0; i<digits; i++) num += Math.floor(Math.random()*10);
+    for(let i=0; i<numDigits; i++) num += Math.floor(Math.random()*8);
     return num;
 }
 
 function startRound() {
-    if (roundInLevel >= 10) {
+    if (roundInLevel >= 8) {
         showLevelSummary();
         return;
     }
 
     roundInLevel++;
-    document.getElementById("level-progress").textContent = `LEVEL ${level} | Number: ${roundInLevel} / 10`;
+    document.getElementById("level-progress").textContent = `LEVEL ${level} | Number: ${roundInLevel} / 8`;
     document.getElementById("result").textContent = "";
     document.getElementById("inputBox").value = "";
     document.getElementById("inputBox").style.display = "none";
@@ -230,18 +243,18 @@ function showLevelSummary() {
     const btn = document.getElementById("next-btn");
 
     overlay.style.display = "flex";
-    const accuracy = correctInLevel * 10;
-    const pass = correctInLevel >= 8;
+    const accuracy = correctInLevel * 8;
+    const pass = correctInLevel >= 6;
 
     if (pass) {
         title.textContent = "LEVEL COMPLETE";
         title.style.color = "#00ffcc";
-        details.innerHTML = `Score: ${correctInLevel}/10<br>Accuracy: ${accuracy}%<br>Speed: ${displayTime}ms<br><br><b>Status: PROMOTED</b>`;
+        details.innerHTML = `Score: ${correctInLevel}/8<br>Accuracy: ${accuracy}%<br>Speed: ${displayTime}ms<br><br><b>Status: PROMOTED</b>`;
         btn.textContent = "START LEVEL " + (level + 1);
     } else {
         title.textContent = "LEVEL FAILED";
         title.style.color = "#ff4444";
-        details.innerHTML = `Score: ${correctInLevel}/10<br>Accuracy: ${accuracy}%<br><br><i>Min. Required: 8/10 to advance.</i>`;
+        details.innerHTML = `Score: ${correctInLevel}/8<br>Accuracy: ${accuracy}%<br><br><i>Min. Required: 6/8 to advance.</i>`;
         btn.textContent = "RETRY LEVEL " + level;
     }
 }
@@ -249,8 +262,8 @@ function showLevelSummary() {
 function nextLevel() {
     if (correctInLevel >= 8) {
         level++;
-        // Reduces by 30ms per level passed
-        displayTime = Math.max(60, displayTime - 30); 
+        // Reduces by 20ms per level passed to make it gradual
+        displayTime = Math.max(50, displayTime - 20); 
     }
     
     // Reset round counters
