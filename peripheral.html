@@ -406,7 +406,12 @@ function handleAction() {
             config.reactionWindow = Math.max(500, config.reactionWindow - 100);
         }
         
-        config.passRate = Math.min(0.98, config.passRate + 0.05);
+        // Reset pass rate when Level 4 begins
+if (level === 4) {
+    config.passRate = 0.70;
+} else {
+    config.passRate = Math.min(0.98, config.passRate + 0.05);
+}
     }
     
     document.getElementById("summary-overlay").style.display = "none";
