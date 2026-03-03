@@ -68,6 +68,35 @@
         width: auto; 
         filter: drop-shadow(0 0 10px rgba(0, 255, 204, 0.3));
     }
+    #global-timer-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.8);
+    padding: 15px;
+    border: 2px solid #00ffcc;
+    border-radius: 12px;
+    z-index: 9999;
+    font-family: 'Courier New', monospace;
+    text-align: center;
+}
+#timer-display {
+    font-size: 28px;
+    color: #00ffcc;
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+.timer-btn {
+    padding: 5px 10px;
+    margin: 2px;
+    cursor: pointer;
+    font-weight: bold;
+    border-radius: 4px;
+    border: none;
+}
+#start-stop-timer { background: #00ffcc; color: black; }
+#reset-timer { background: #ff4444; color: white; }
+
 </style>
 </head>
 <body>
@@ -96,8 +125,74 @@
         <h2>🔥 Quick Thinking </h2>
         <p>Be able to memorise and add all the numbers of the target colour</p>
     </div>
+    
+    <div id="global-timer-container">
+    <div id="timer-display">00:00:00</div>
+    <button id="start-stop-timer" class="timer-btn">START</button>
+    <button id="reset-timer" class="timer-btn">RESET</button>
+</div>
 
 </div>
+
+<script>let timerInterval;
+let isRunning = false;
+
+const display = document.getElementById('timer-display');
+const startBtn = document.getElementById('start-stop-timer');
+const resetBtn = document.getElementById('reset-timer');
+
+function updateDisplay() {
+    let startTime = localStorage.getItem('globalStartTime');
+    if (!startTime) {
+        display.textContent = "00:00:00";
+        return;
+    }
+
+    let elapsed = Date.now() - parseInt(startTime);
+    let ms = Math.floor((elapsed % 1000) / 10);
+    let s = Math.floor((elapsed / 1000) % 60);
+    let m = Math.floor((elapsed / 60000) % 60);
+    
+    display.textContent = 
+        `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}:${ms.toString().padStart(2,'0')}`;
+}
+
+startBtn.addEventListener('click', () => {
+    if (!isRunning) {
+        // Start or Resume
+        let savedTime = localStorage.getItem('globalStartTime');
+        if (!savedTime) {
+            localStorage.setItem('globalStartTime', Date.now());
+        }
+        timerInterval = setInterval(updateDisplay, 10);
+        startBtn.textContent = "STOP";
+        isRunning = true;
+    } else {
+        // Stop (Pause)
+        clearInterval(timerInterval);
+        startBtn.textContent = "START";
+        isRunning = false;
+        // Optional: If you want it to truly "Stop" and stay there, 
+        // you'd need to save the elapsed time. For a total session timer, 
+        // most users just leave it running across tests.
+    }
+});
+
+resetBtn.addEventListener('click', () => {
+    clearInterval(timerInterval);
+    localStorage.removeItem('globalStartTime');
+    display.textContent = "00:00:00";
+    startBtn.textContent = "START";
+    isRunning = false;
+});
+
+// AUTO-RESUME when page loads
+if (localStorage.getItem('globalStartTime')) {
+    isRunning = true;
+    startBtn.textContent = "STOP";
+    timerInterval = setInterval(updateDisplay, 10);
+}
+</script>
 
 <footer>
 Built for high-performance athletes 🧠⚡
