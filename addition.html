@@ -22,7 +22,7 @@
         font-weight: bold; border-radius: 8px; z-index: 1000;
     }
 
-    #header-info { margin-top: 40px; z-index: 10; }
+    #header-info { margin-top: 40px; z-index: 10; position: relative; }
 
     #target-display {
         font-size: 24px; font-weight: bold; padding: 10px 20px;
@@ -31,14 +31,22 @@
         transition: all 0.3s;
     }
 
-    #game-container { position: relative; width: 100vw; height: 60vh; }
-
-    .number-node {
-        position: absolute; font-size: 50px;
-        font-weight: bold; pointer-events: none;
+    #game-container { 
+        position: relative; 
+        width: 100vw; 
+        height: 70vh; 
+        margin: 0 auto;
     }
 
-    /* INPUT OVERLAY */
+    .number-node {
+        position: absolute; 
+        font-size: 60px; /* Slightly larger for readability */
+        font-weight: bold; 
+        pointer-events: none;
+        transform: translate(-50%, -50%);
+        text-shadow: 2px 2px 10px rgba(0,0,0,0.5);
+    }
+
     #input-overlay {
         position: fixed; top: 0; left: 0; width: 100%; height: 100%;
         background: rgba(5, 15, 12, 0.98);
@@ -71,11 +79,12 @@
 
     #result-msg { font-size: 28px; margin-bottom: 20px; font-weight: bold; }
     .status-text { color: #aaa; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px;}
+    .hint-text { color: #666; font-size: 14px; margin-top: 15px; }
 </style>
 </head>
 <body>
 
-<a href="index.html" class="home-button">🏠 Home</a>
+<a href="#" class="home-button">🏠 Home</a>
 
 <div id="header-info">
     <h1>SUMMATION DRILL</h1>
@@ -84,7 +93,7 @@
 </div>
 
 <div id="game-container">
-    <div style="margin-top: 100px;">
+    <div style="padding-top: 100px;">
         <p id="instruction-text">Memorize the numbers in the target color.</p>
         <button id="start-btn" class="action-btn" onclick="startSequence()">BEGIN TEST</button>
     </div>
@@ -100,6 +109,7 @@
         <button id="next-lvl-btn" class="action-btn" onclick="setupLevel('next')" style="display:none;">NEXT LEVEL</button>
         <button id="retry-lvl-btn" class="action-btn retry-btn" onclick="setupLevel('retry')" style="display:none;">TRY AGAIN</button>
     </div>
+    <p class="hint-text">Press Enter to Submit / Advance</p>
 </div>
 
 <script>
@@ -115,14 +125,16 @@
     let runningSum = 0;
     let flashCount = 0;
     let maxFlashes = 3; 
-    let displayTime = 400; // Starting Level 1 speed
+    let displayTime = 400;
+    let isGameOver = false;
 
     function setupLevel(mode) {
         if (mode === 'next') level++;
+        isGameOver = false;
         
         document.body.style.backgroundColor = "#050f0c";
         document.getElementById("input-overlay").style.display = "none";
-        document.getElementById("game-container").innerHTML = '<div style="margin-top: 100px;"><p id="instruction-text">Memorize the numbers in the target color.</p><button id="start-btn" class="action-btn" onclick="startSequence()">BEGIN TEST</button></div>';
+        document.getElementById("game-container").innerHTML = '<div style="padding-top: 100px;"><p id="instruction-text">Memorize the numbers in the target color.</p><button id="start-btn" class="action-btn" onclick="startSequence()">BEGIN TEST</button></div>';
         document.getElementById("sum-input").classList.remove("shake");
         
         document.getElementById("submit-btn").style.display = "inline-block";
@@ -132,17 +144,10 @@
         runningSum = 0;
         flashCount = 0;
 
-        // Difficulty Scaling: maxFlashes
-        if (level <= 2) {
-            maxFlashes = 3;
-        } else {
-            maxFlashes = Math.min(8, 3 + (level - 2)); 
-        }
+        if (level <= 2) maxFlashes = 3;
+        else maxFlashes = Math.min(8, 3 + (level - 2)); 
         
-        // Difficulty Scaling: displayTime
-        if (level === 1) displayTime = 400;
-        else if (level === 2) displayTime = 350;
-        else displayTime = Math.max(100, 350 - ((level - 2) * 20));
+        displayTime = Math.max(120, 400 - (level * 15));
 
         targetColor = colors[Math.floor(Math.random() * colors.length)];
         const targetEl = document.getElementById("target-display");
@@ -166,17 +171,27 @@
         const container = document.getElementById("game-container");
         container.innerHTML = "";
         
+        // Grid Logic (4x3 grid)
+        const cols = 4, rows = 3;
+        const cells = [];
+        for(let r=0; r<rows; r++) for(let c=0; c<cols; c++) cells.push({r, c});
+        
+        // Shuffle cells
+        cells.sort(() => Math.random() - 0.5);
+
+        // Create Target
         const targetNum = Math.floor(Math.random() * 9) + 1;
         runningSum += targetNum;
+        createNodeInCell(targetNum, targetColor.value, cells.pop(), cols, rows);
 
-        createNode(targetNum, targetColor.value);
-
+        // Create Distractors
         const distractorCount = 2 + Math.floor(level/2);
         for(let i=0; i < distractorCount; i++) {
+            if(cells.length === 0) break;
             let randColor;
             do { randColor = colors[Math.floor(Math.random() * colors.length)]; } 
             while (randColor.value === targetColor.value);
-            createNode(Math.floor(Math.random() * 9) + 1, randColor.value);
+            createNodeInCell(Math.floor(Math.random() * 9) + 1, randColor.value, cells.pop(), cols, rows);
         }
 
         flashCount++;
@@ -186,16 +201,21 @@
         }, displayTime);
     }
 
-    function createNode(text, color) {
+    function createNodeInCell(text, color, cell, totalCols, totalRows) {
+        const container = document.getElementById("game-container");
+        const cellW = container.clientWidth / totalCols;
+        const cellH = container.clientHeight / totalRows;
+
+        const x = (cell.c * cellW) + (cellW / 2);
+        const y = (cell.r * cellH) + (cellH / 2);
+
         const node = document.createElement("div");
         node.className = "number-node";
         node.textContent = text;
         node.style.color = color;
-        const x = Math.random() * (window.innerWidth - 100) + 50;
-        const y = Math.random() * (window.innerHeight * 0.5) + 50;
         node.style.left = x + "px";
         node.style.top = y + "px";
-        document.getElementById("game-container").appendChild(node);
+        container.appendChild(node);
     }
 
     function showInput() {
@@ -206,10 +226,15 @@
     }
 
     function checkSum() {
-        const userVal = parseInt(document.getElementById("sum-input").value);
-        const msg = document.getElementById("result-msg");
         const inputField = document.getElementById("sum-input");
+        const userVal = parseInt(inputField.value);
+        const msg = document.getElementById("result-msg");
         
+        if (isNaN(userVal)) return;
+
+        isGameOver = true;
+        inputField.blur(); // Remove focus so Enter targets the buttons/window
+
         if (userVal === runningSum) {
             msg.textContent = "✔ CLEAN TOUCH! SUM WAS " + runningSum;
             msg.style.color = "#00ffcc";
@@ -222,12 +247,33 @@
             msg.style.color = "#ff4444";
             document.getElementById("submit-btn").style.display = "none";
             document.getElementById("retry-lvl-btn").style.display = "inline-block";
-            setTimeout(() => inputField.classList.remove("shake"), 400);
         }
     }
 
-    document.getElementById("sum-input").addEventListener("keydown", (e) => {
-        if(e.key === "Enter") checkSum();
+    // Single Keydown Listener for both Submitting and Advancing
+    window.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+            const overlay = document.getElementById("input-overlay");
+            
+            // If overlay isn't visible, check if we need to start the game
+            if (overlay.style.display !== "flex") {
+                const startBtn = document.getElementById("start-btn");
+                if (startBtn) startSequence();
+                return;
+            }
+
+            // If overlay IS visible
+            if (!isGameOver) {
+                checkSum();
+            } else {
+                // If game is over, determine which button is visible and click it
+                const nextBtn = document.getElementById("next-lvl-btn");
+                const retryBtn = document.getElementById("retry-lvl-btn");
+                
+                if (nextBtn.style.display !== "none") setupLevel('next');
+                else if (retryBtn.style.display !== "none") setupLevel('retry');
+            }
+        }
     });
 
     setupLevel('start');
