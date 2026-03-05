@@ -24,7 +24,7 @@
             transition: background-color 0.4s ease;
         }
 
-        /* HOME BUTTON - High Z-Index */
+        /* FIXED: Home button now points to index.html and stays on top */
         .home-button {
             position: fixed; 
             top: 20px; 
@@ -35,12 +35,13 @@
             text-decoration: none;
             font-weight: bold; 
             border-radius: 8px; 
-            z-index: 5000; 
+            z-index: 5000; /* Higher than input overlay */
             cursor: pointer;
             border: none;
             transition: transform 0.2s;
+            display: inline-block;
         }
-        .home-button:hover { transform: scale(1.1); }
+        .home-button:hover { transform: scale(1.1); background-color: white; }
 
         /* GLOBAL PERSISTENT STOPWATCH - BOTTOM LEFT */
         #global-timer-container {
@@ -51,7 +52,7 @@
             padding: 15px;
             border: 2px solid var(--primary);
             border-radius: 12px;
-            z-index: 9999;
+            z-index: 4000;
             font-family: 'Courier New', monospace;
             text-align: center;
             box-shadow: 0 0 15px rgba(0, 255, 204, 0.3);
@@ -109,7 +110,7 @@
 
         #input-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(5, 15, 12, 0.95);
+            background: rgba(5, 15, 12, 0.98);
             display: none; flex-direction: column;
             justify-content: center; align-items: center; z-index: 2000;
         }
@@ -138,7 +139,7 @@
 </head>
 <body>
 
-<button class="home-button" onclick="resetToHome()">🏠 Reset</button>
+<a href="index.html" class="home-button">🏠 Home</a>
 
 <div id="global-timer-container">
     <div id="timer-display">00:00:00</div>
@@ -166,7 +167,7 @@
     <div id="overlay-buttons">
         <button id="submit-btn" class="action-btn" onclick="checkSum()">SUBMIT</button>
         <button id="next-lvl-btn" class="action-btn" onclick="setupLevel('next')" style="display:none;">NEXT LEVEL</button>
-        <button id="retry-lvl-btn" class="action-btn" onclick="setupLevel('retry')" style="display:none; background: #ff4444; color: white;">TRY AGAIN</button>
+        <button id="retry-lvl-btn" class="action-btn retry-btn" onclick="setupLevel('retry')" style="display:none; background: #ff4444; color: white;">TRY AGAIN</button>
     </div>
 </div>
 
@@ -235,11 +236,6 @@
     let maxFlashes = 3; 
     let displayTime = 400;
     let isWaitingForInput = false;
-
-    function resetToHome() {
-        level = 1;
-        setupLevel('start');
-    }
 
     function setupLevel(mode) {
         if (mode === 'next') level++;
