@@ -1,118 +1,226 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Elite Summation Drill - Pro Edition</title>
-<style>
-    body {
-        font-family: 'Segoe UI', Arial, sans-serif;
-        background-color: #050f0c;
-        color: white;
-        text-align: center;
-        overflow: hidden;
-        margin: 0;
-        height: 100vh;
-        transition: background-color 0.3s;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elite Summation Drill - Pro Edition</title>
+    <style>
+        :root {
+            --primary: #00ffcc;
+            --bg-dark: #050f0c;
+            --error: #ff4444;
+        }
 
-    .home-button {
-        position: fixed; top: 20px; right: 20px;
-        background-color: #00ffcc; color: black;
-        padding: 10px 15px; text-decoration: none;
-        font-weight: bold; border-radius: 8px; z-index: 1000;
-    }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-dark);
+            color: white;
+            text-align: center;
+            overflow: hidden;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: background-color 0.4s ease;
+        }
 
-    #header-info { margin-top: 40px; z-index: 10; position: relative; }
+        /* HOME BUTTON - High Z-Index */
+        .home-button {
+            position: fixed; 
+            top: 20px; 
+            right: 20px;
+            background-color: var(--primary); 
+            color: black;
+            padding: 10px 18px; 
+            text-decoration: none;
+            font-weight: bold; 
+            border-radius: 8px; 
+            z-index: 5000; 
+            cursor: pointer;
+            border: none;
+            transition: transform 0.2s;
+        }
+        .home-button:hover { transform: scale(1.1); }
 
-    #target-display {
-        font-size: 24px; font-weight: bold; padding: 10px 20px;
-        border-radius: 10px; display: inline-block;
-        border: 2px solid white; margin-bottom: 20px;
-        transition: all 0.3s;
-    }
+        /* GLOBAL PERSISTENT STOPWATCH - BOTTOM LEFT */
+        #global-timer-container {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 15px;
+            border: 2px solid var(--primary);
+            border-radius: 12px;
+            z-index: 9999;
+            font-family: 'Courier New', monospace;
+            text-align: center;
+            box-shadow: 0 0 15px rgba(0, 255, 204, 0.3);
+        }
 
-    #game-container { 
-        position: relative; 
-        width: 100vw; 
-        height: 70vh; 
-        margin: 0 auto;
-    }
+        #timer-display {
+            font-size: 28px;
+            color: var(--primary);
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
 
-    .number-node {
-        position: absolute; 
-        font-size: 60px; /* Slightly larger for readability */
-        font-weight: bold; 
-        pointer-events: none;
-        transform: translate(-50%, -50%);
-        text-shadow: 2px 2px 10px rgba(0,0,0,0.5);
-    }
+        .timer-btn {
+            padding: 6px 12px;
+            margin: 2px;
+            cursor: pointer;
+            font-weight: bold;
+            border-radius: 6px;
+            border: none;
+            transition: 0.2s;
+        }
+        #start-stop-timer { background: var(--primary); color: black; }
+        #reset-timer { background: var(--error); color: white; }
 
-    #input-overlay {
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(5, 15, 12, 0.98);
-        display: none; flex-direction: column;
-        justify-content: center; align-items: center; z-index: 2000;
-    }
+        /* GAME UI */
+        #header-info { margin-top: 50px; flex-shrink: 0; }
+        #target-display {
+            font-size: 22px; font-weight: bold; padding: 12px 25px;
+            border-radius: 10px; display: inline-block;
+            border: 2px solid white; margin-bottom: 15px;
+        }
 
-    #sum-input {
-        font-size: 48px; padding: 10px; width: 220px;
-        text-align: center; background: #111; color: #00ffcc;
-        border: 3px solid #00ffcc; border-radius: 10px;
-        outline: none; margin-bottom: 20px;
-    }
+        #game-container { 
+            position: relative; 
+            flex-grow: 1;
+            width: 100%;
+            max-width: 900px;
+            margin: 0 auto;
+        }
 
-    .shake { animation: shake 0.4s; }
-    @keyframes shake {
-        0%, 100% { transform: translateX(0); }
-        25% { transform: translateX(-10px); }
-        75% { transform: translateX(10px); }
-    }
+        .number-node {
+            position: absolute; 
+            font-size: 65px; 
+            font-weight: 900; 
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            text-shadow: 0 0 15px rgba(0,0,0,0.8);
+            animation: pulse 0.4s ease-out;
+        }
 
-    .action-btn {
-        background: #00ffcc; color: black; border: none;
-        padding: 15px 40px; font-size: 20px; font-weight: bold;
-        border-radius: 10px; cursor: pointer; transition: 0.2s;
-    }
+        @keyframes pulse {
+            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
 
-    .action-btn:hover { background: white; transform: scale(1.05); }
-    .retry-btn { background: #ff4444; color: white; }
+        #input-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(5, 15, 12, 0.95);
+            display: none; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 2000;
+        }
 
-    #result-msg { font-size: 28px; margin-bottom: 20px; font-weight: bold; }
-    .status-text { color: #aaa; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px;}
-    .hint-text { color: #666; font-size: 14px; margin-top: 15px; }
-</style>
+        #sum-input {
+            font-size: 50px; padding: 15px; width: 200px;
+            text-align: center; background: #000; color: var(--primary);
+            border: 3px solid var(--primary); border-radius: 15px;
+            outline: none; margin-bottom: 25px;
+        }
+
+        .action-btn {
+            background: var(--primary); color: black; border: none;
+            padding: 15px 45px; font-size: 18px; font-weight: bold;
+            border-radius: 12px; cursor: pointer; transition: 0.2s;
+            margin: 5px;
+        }
+
+        .shake { animation: shake 0.4s; }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-12px); }
+            75% { transform: translateX(12px); }
+        }
+    </style>
 </head>
 <body>
 
-<a href="#" class="home-button">🏠 Home</a>
+<button class="home-button" onclick="resetToHome()">🏠 Reset</button>
+
+<div id="global-timer-container">
+    <div id="timer-display">00:00:00</div>
+    <button id="start-stop-timer" class="timer-btn">START</button>
+    <button id="reset-timer" class="timer-btn">RESET</button>
+</div>
 
 <div id="header-info">
     <h1>SUMMATION DRILL</h1>
     <div id="target-display">TARGET COLOR: <span id="color-name">???</span></div>
-    <div id="level-text" style="color: #00ffcc; margin-top:10px;">LEVEL 1</div>
+    <div id="level-text" style="color: var(--primary); margin-top:5px; font-weight: bold;">LEVEL 1</div>
 </div>
 
 <div id="game-container">
-    <div style="padding-top: 100px;">
-        <p id="instruction-text">Memorize the numbers in the target color.</p>
+    <div id="start-screen" style="padding-top: 100px;">
+        <p>Memorize and sum the numbers in the target color.</p>
         <button id="start-btn" class="action-btn" onclick="startSequence()">BEGIN TEST</button>
     </div>
 </div>
 
 <div id="input-overlay">
     <div id="result-msg"></div>
-    <p class="status-text">Mental Math Check</p>
-    <input type="number" id="sum-input" placeholder="Sum?" autocomplete="off">
-    
+    <p style="color: #888; letter-spacing: 2px;">ENTER TOTAL SUM</p>
+    <input type="number" id="sum-input" placeholder="?" autocomplete="off">
     <div id="overlay-buttons">
         <button id="submit-btn" class="action-btn" onclick="checkSum()">SUBMIT</button>
         <button id="next-lvl-btn" class="action-btn" onclick="setupLevel('next')" style="display:none;">NEXT LEVEL</button>
-        <button id="retry-lvl-btn" class="action-btn retry-btn" onclick="setupLevel('retry')" style="display:none;">TRY AGAIN</button>
+        <button id="retry-lvl-btn" class="action-btn" onclick="setupLevel('retry')" style="display:none; background: #ff4444; color: white;">TRY AGAIN</button>
     </div>
-    <p class="hint-text">Press Enter to Submit / Advance</p>
 </div>
 
 <script>
+    // --- STOPWATCH LOGIC ---
+    let timerInterval;
+    let isTimerRunning = false;
+    const timerDisplay = document.getElementById('timer-display');
+    const timerStartBtn = document.getElementById('start-stop-timer');
+    const timerResetBtn = document.getElementById('reset-timer');
+
+    function updateTimer() {
+        let startTime = localStorage.getItem('globalStartTime');
+        if (!startTime) {
+            timerDisplay.textContent = "00:00:00";
+            return;
+        }
+        let elapsed = Date.now() - parseInt(startTime);
+        let ms = Math.floor((elapsed % 1000) / 10);
+        let s = Math.floor((elapsed / 1000) % 60);
+        let m = Math.floor((elapsed / 60000) % 60);
+        timerDisplay.textContent = `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}:${ms.toString().padStart(2,'0')}`;
+    }
+
+    timerStartBtn.addEventListener('click', () => {
+        if (!isTimerRunning) {
+            if (!localStorage.getItem('globalStartTime')) {
+                localStorage.setItem('globalStartTime', Date.now());
+            }
+            timerInterval = setInterval(updateTimer, 10);
+            timerStartBtn.textContent = "STOP";
+            isTimerRunning = true;
+        } else {
+            clearInterval(timerInterval);
+            timerStartBtn.textContent = "START";
+            isTimerRunning = false;
+        }
+    });
+
+    timerResetBtn.addEventListener('click', () => {
+        clearInterval(timerInterval);
+        localStorage.removeItem('globalStartTime');
+        timerDisplay.textContent = "00:00:00";
+        timerStartBtn.textContent = "START";
+        isTimerRunning = false;
+    });
+
+    if (localStorage.getItem('globalStartTime')) {
+        isTimerRunning = true;
+        timerStartBtn.textContent = "STOP";
+        timerInterval = setInterval(updateTimer, 10);
+    }
+
+    // --- GAME LOGIC ---
     const colors = [
         { name: "RED", value: "#ff4444" },
         { name: "GREEN", value: "#00ff88" },
@@ -126,29 +234,31 @@
     let flashCount = 0;
     let maxFlashes = 3; 
     let displayTime = 400;
-    let isGameOver = false;
+    let isWaitingForInput = false;
+
+    function resetToHome() {
+        level = 1;
+        setupLevel('start');
+    }
 
     function setupLevel(mode) {
         if (mode === 'next') level++;
-        isGameOver = false;
-        
+        isWaitingForInput = false;
         document.body.style.backgroundColor = "#050f0c";
         document.getElementById("input-overlay").style.display = "none";
-        document.getElementById("game-container").innerHTML = '<div style="padding-top: 100px;"><p id="instruction-text">Memorize the numbers in the target color.</p><button id="start-btn" class="action-btn" onclick="startSequence()">BEGIN TEST</button></div>';
+        document.getElementById("game-container").innerHTML = `
+            <div id="start-screen" style="padding-top: 100px;">
+                <p>Focus on numbers matching the <b>Target Color</b>.</p>
+                <button class="action-btn" onclick="startSequence()">BEGIN LEVEL ${level}</button>
+            </div>`;
         document.getElementById("sum-input").classList.remove("shake");
-        
         document.getElementById("submit-btn").style.display = "inline-block";
         document.getElementById("next-lvl-btn").style.display = "none";
         document.getElementById("retry-lvl-btn").style.display = "none";
-        
         runningSum = 0;
         flashCount = 0;
-
-        if (level <= 2) maxFlashes = 3;
-        else maxFlashes = Math.min(8, 3 + (level - 2)); 
-        
-        displayTime = Math.max(120, 400 - (level * 15));
-
+        maxFlashes = Math.min(10, 3 + Math.floor(level / 2));
+        displayTime = Math.max(150, 450 - (level * 20));
         targetColor = colors[Math.floor(Math.random() * colors.length)];
         const targetEl = document.getElementById("target-display");
         targetEl.style.borderColor = targetColor.value;
@@ -159,7 +269,7 @@
 
     function startSequence() {
         document.getElementById("game-container").innerHTML = "";
-        setTimeout(nextFlash, 500);
+        setTimeout(nextFlash, 600);
     }
 
     function nextFlash() {
@@ -167,58 +277,39 @@
             showInput();
             return;
         }
-
         const container = document.getElementById("game-container");
         container.innerHTML = "";
-        
-        // Grid Logic (4x3 grid)
-        const cols = 4, rows = 3;
-        const cells = [];
-        for(let r=0; r<rows; r++) for(let c=0; c<cols; c++) cells.push({r, c});
-        
-        // Shuffle cells
-        cells.sort(() => Math.random() - 0.5);
-
-        // Create Target
+        const cellX = Math.floor(Math.random() * 4);
+        const cellY = Math.floor(Math.random() * 3);
         const targetNum = Math.floor(Math.random() * 9) + 1;
         runningSum += targetNum;
-        createNodeInCell(targetNum, targetColor.value, cells.pop(), cols, rows);
-
-        // Create Distractors
-        const distractorCount = 2 + Math.floor(level/2);
-        for(let i=0; i < distractorCount; i++) {
-            if(cells.length === 0) break;
-            let randColor;
-            do { randColor = colors[Math.floor(Math.random() * colors.length)]; } 
-            while (randColor.value === targetColor.value);
-            createNodeInCell(Math.floor(Math.random() * 9) + 1, randColor.value, cells.pop(), cols, rows);
+        createNode(targetNum, targetColor.value, cellX, cellY);
+        for(let i=0; i<2; i++) {
+            let distColor;
+            do { distColor = colors[Math.floor(Math.random() * colors.length)]; } 
+            while (distColor.value === targetColor.value);
+            createNode(Math.floor(Math.random() * 9) + 1, distColor.value, (cellX + i + 1) % 4, (cellY + i + 1) % 3);
         }
-
         flashCount++;
         setTimeout(() => {
             container.innerHTML = "";
-            setTimeout(nextFlash, 600);
+            setTimeout(nextFlash, 400);
         }, displayTime);
     }
 
-    function createNodeInCell(text, color, cell, totalCols, totalRows) {
+    function createNode(text, color, cx, cy) {
         const container = document.getElementById("game-container");
-        const cellW = container.clientWidth / totalCols;
-        const cellH = container.clientHeight / totalRows;
-
-        const x = (cell.c * cellW) + (cellW / 2);
-        const y = (cell.r * cellH) + (cellH / 2);
-
         const node = document.createElement("div");
         node.className = "number-node";
         node.textContent = text;
         node.style.color = color;
-        node.style.left = x + "px";
-        node.style.top = y + "px";
+        node.style.left = (20 + (cx * 20)) + "%";
+        node.style.top = (25 + (cy * 25)) + "%";
         container.appendChild(node);
     }
 
     function showInput() {
+        isWaitingForInput = true;
         document.getElementById("input-overlay").style.display = "flex";
         document.getElementById("sum-input").value = "";
         document.getElementById("sum-input").focus();
@@ -229,49 +320,33 @@
         const inputField = document.getElementById("sum-input");
         const userVal = parseInt(inputField.value);
         const msg = document.getElementById("result-msg");
-        
         if (isNaN(userVal)) return;
-
-        isGameOver = true;
-        inputField.blur(); // Remove focus so Enter targets the buttons/window
-
         if (userVal === runningSum) {
-            msg.textContent = "✔ CLEAN TOUCH! SUM WAS " + runningSum;
+            msg.textContent = "CORRECT: " + runningSum;
             msg.style.color = "#00ffcc";
             document.getElementById("submit-btn").style.display = "none";
             document.getElementById("next-lvl-btn").style.display = "inline-block";
         } else {
-            document.body.style.backgroundColor = "#220505";
+            document.body.style.backgroundColor = "#330000";
             inputField.classList.add("shake");
-            msg.textContent = "✘ TURNOVER. SUM WAS " + runningSum;
+            msg.textContent = "WRONG. SUM WAS " + runningSum;
             msg.style.color = "#ff4444";
             document.getElementById("submit-btn").style.display = "none";
             document.getElementById("retry-lvl-btn").style.display = "inline-block";
         }
     }
 
-    // Single Keydown Listener for both Submitting and Advancing
     window.addEventListener("keydown", (e) => {
         if (e.key === "Enter") {
-            const overlay = document.getElementById("input-overlay");
-            
-            // If overlay isn't visible, check if we need to start the game
-            if (overlay.style.display !== "flex") {
-                const startBtn = document.getElementById("start-btn");
-                if (startBtn) startSequence();
-                return;
-            }
-
-            // If overlay IS visible
-            if (!isGameOver) {
-                checkSum();
-            } else {
-                // If game is over, determine which button is visible and click it
+            if (isWaitingForInput) {
                 const nextBtn = document.getElementById("next-lvl-btn");
                 const retryBtn = document.getElementById("retry-lvl-btn");
-                
                 if (nextBtn.style.display !== "none") setupLevel('next');
                 else if (retryBtn.style.display !== "none") setupLevel('retry');
+                else checkSum();
+            } else {
+                const startBtn = document.getElementById("start-btn");
+                if (startBtn) startSequence();
             }
         }
     });
