@@ -8,10 +8,11 @@
 body {
     margin: 0;
     font-family: 'Segoe UI', Arial, sans-serif;
-    background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+    background: radial-gradient(circle at center, #1b2735 0%, #090a0f 100%);
     color: white;
     text-align: center;
     overflow: hidden;
+    height: 100vh;
 }
 
 /* HOME BUTTON */
@@ -26,69 +27,76 @@ body {
     font-weight: bold;
     border-radius: 8px;
     transition: 0.2s ease;
-    z-index: 2000; /* Higher than overlays */
-    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    z-index: 2000;
 }
 
-.home-button:hover {
-    background-color: white;
-    transform: translateY(-2px);
+/* STOPWATCH */
+#global-timer-container {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    background: rgba(0, 0, 0, 0.9);
+    padding: 15px;
+    border: 2px solid #00ffcc;
+    border-radius: 12px;
+    z-index: 9999;
+    font-family: 'Courier New', monospace;
+    text-align: center;
 }
+#timer-display { font-size: 28px; color: #00ffcc; margin-bottom: 10px; font-weight: bold; }
+.timer-btn { padding: 6px 12px; margin: 2px; cursor: pointer; font-weight: bold; border-radius: 6px; border: none; }
+#start-stop-timer { background: #00ffcc; color: black; }
+#reset-timer { background: #ff4444; color: white; }
 
-h1 {
-    margin-top: 40px;
-    font-size: 32px;
-    letter-spacing: 2px;
-}
+h1 { margin-top: 40px; font-size: 32px; letter-spacing: 2px; }
 
-/* Glass Panel */
 .panel {
-    padding: 20px 40px;
+    padding: 30px 50px;
     border-radius: 18px;
-    background: rgba(255,255,255,0.08);
-    backdrop-filter: blur(10px);
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(15px);
     display: inline-block;
-    border: 1px solid rgba(255,255,255,0.1);
+    border: 1px solid rgba(0, 255, 204, 0.3);
 }
 
 button {
     margin-top: 20px;
-    padding: 12px 30px;
-    font-size: 18px;
+    padding: 15px 40px;
+    font-size: 20px;
     border-radius: 12px;
     border: none;
     background: #00ffcc;
     font-weight: bold;
     cursor: pointer;
-    transition: 0.3s;
 }
 
-button:hover {
-    background: white;
-    color: black;
-}
-
+/* ARROWS: No hierarchy, identical visibility */
 .arrow {
     position: absolute;
-    font-weight: bold;
+    font-weight: 900;
     user-select: none;
     pointer-events: none;
+    z-index: 500;
+    opacity: 1; /* Target and distractors are now equal */
+    text-shadow: 
+        -2px -2px 0 #000,  
+         2px -2px 0 #000,
+        -2px  2px 0 #000,
+         2px  2px 0 #000;
 }
 
-/* Overlay Screens */
 .overlay {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.95);
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.85);
     display: flex;
     justify-content: center;
     align-items: center;
     flex-direction: column;
     z-index: 1500;
 }
+.stat-line { margin: 10px 0; font-size: 18px; }
+.highlight { color: #00ffcc; font-weight: bold; }
 </style>
 </head>
 
@@ -96,125 +104,130 @@ button:hover {
 
 <a href="index.html" class="home-button">🏠 HOME</a>
 
-<h1>🏑 ELITE REACTION LAB</h1>
+<div id="global-timer-container">
+    <div id="timer-display">00:00:00</div>
+    <button id="start-stop-timer" class="timer-btn">START</button>
+    <button id="reset-timer" class="timer-btn">RESET</button>
+</div>
 
+<h1>🏑 ELITE REACTION LAB</h1>
 <div id="overlay" class="overlay"></div>
 
 <script>
-const colors=["red","blue","orange","yellow","green"];
+const colors=["#ff4444","#3399ff","#ff9900","#ffff00","#00ff66"];
 const arrows=["↑","↓","←","→"];
-const arrowKeys={
-    "ArrowUp":"↑",
-    "ArrowDown":"↓",
-    "ArrowLeft":"←",
-    "ArrowRight":"→"
-};
+const arrowKeys={"ArrowUp":"↑", "ArrowDown":"↓", "ArrowLeft":"←", "ArrowRight":"→"};
 
-let level=1;
-let arrowSize=100;
-let arrowCount=6;
-let allowedTime=900;
-
-let attempts=0;
-let correct=0;
-let totalReaction=0;
-let requiredAttempts=0;
-
-let targetColor="";
-let targetArrow="";
-let spawnTime=0;
-let active=false;
+let level=1, arrowSize=110, arrowCount=6, allowedTime=900;
+let attempts=0, correct=0, totalReaction=0, requiredAttempts=0;
+let targetColor="", targetArrow="", spawnTime=0, active=false, overlayVisible = true;
 
 const overlay=document.getElementById("overlay");
 
-function randomAttempts(){
-    return Math.floor(Math.random()*11)+10; // 10-20
+// --- STOPWATCH SYNC ---
+let timerInterval, isTimerRunning = false;
+function updateGlobalDisplay() {
+    let startTime = localStorage.getItem('globalStartTime');
+    if (!startTime) { document.getElementById('timer-display').textContent = "00:00:00"; return; }
+    let elapsed = Date.now() - parseInt(startTime);
+    let ms = Math.floor((elapsed % 1000) / 10), s = Math.floor((elapsed / 1000) % 60), m = Math.floor((elapsed / 60000) % 60);
+    document.getElementById('timer-display').textContent = `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}:${ms.toString().padStart(2,'0')}`;
+}
+document.getElementById('start-stop-timer').addEventListener('click', (e) => {
+    if (!isTimerRunning) {
+        if (!localStorage.getItem('globalStartTime')) localStorage.setItem('globalStartTime', Date.now());
+        timerInterval = setInterval(updateGlobalDisplay, 10);
+        e.target.textContent = "STOP"; isTimerRunning = true;
+    } else { clearInterval(timerInterval); e.target.textContent = "START"; isTimerRunning = false; }
+});
+document.getElementById('reset-timer').addEventListener('click', () => {
+    clearInterval(timerInterval); localStorage.removeItem('globalStartTime');
+    document.getElementById('timer-display').textContent = "00:00:00";
+    document.getElementById('start-stop-timer').textContent = "START"; isTimerRunning = false;
+});
+if (localStorage.getItem('globalStartTime')) {
+    isTimerRunning = true; document.getElementById('start-stop-timer').textContent = "STOP";
+    timerInterval = setInterval(updateGlobalDisplay, 10);
 }
 
+// --- GAMEPLAY ---
 function showLevelBrief(){
-    requiredAttempts=randomAttempts();
-    targetColor=colors[Math.floor(Math.random()*colors.length)];
+    overlayVisible = true;
+    requiredAttempts = Math.floor(Math.random()*6)+10;
+    targetColor = colors[Math.floor(Math.random()*colors.length)];
+    let currentThreshold = Math.min(85, 70 + (level * 3)); 
 
     overlay.style.display="flex";
     overlay.innerHTML=`
         <div class="panel">
-            <h2>Level ${level}</h2>
-            <p>Press the key for the <strong style="color:${targetColor}">${targetColor.toUpperCase()}</strong> arrow</p>
-            <p><strong>Time Limit:</strong> ${(allowedTime/1000).toFixed(2)}s</p>
-            <p><strong>Tests:</strong> ${requiredAttempts}</p>
-            <button onclick="startLevel()">Start Level</button>
+            <h2 style="color:#00ffcc">Level ${level}</h2>
+            <p>React to the <strong style="color:${targetColor}">STIMULUS</strong> arrow</p>
+            <div class="stat-line">Time Limit: <span class="highlight">${allowedTime}ms</span></div>
+            <div class="stat-line">Target Accuracy: <span class="highlight">${currentThreshold}%</span></div>
+            <button id="action-btn" onclick="startLevel()">Start (Enter)</button>
         </div>
     `;
 }
 
 function startLevel(){
-    overlay.style.display="none";
-    attempts=0;
-    correct=0;
-    totalReaction=0;
-    active=true;
+    overlayVisible = false; overlay.style.display="none";
+    attempts=0; correct=0; totalReaction=0; active=true;
     generateArrows();
 }
 
-function clearArrows(){
-    document.querySelectorAll(".arrow").forEach(a=>a.remove());
-}
-
 function randomPosition(el){
-    const pad = 150;
-    // Math to avoid the home button and header area
-    let x = Math.random() * (window.innerWidth - pad);
-    let y = Math.random() * (window.innerHeight - pad - 100) + 100;
-
-    el.style.left = x + "px";
-    el.style.top = y + "px";
+    const pad = 120, swW = 280, swH = 200;
+    let x, y;
+    do {
+        x = Math.random() * (window.innerWidth - pad);
+        y = Math.random() * (window.innerHeight - pad - 120) + 120;
+    } while (x < swW && y > (window.innerHeight - swH));
+    el.style.left = x + "px"; el.style.top = y + "px";
 }
 
 function generateArrows(){
-    clearArrows();
-
-    const distractorColors=colors.filter(c=>c!==targetColor);
-
-    // Spawn distractors
-    for(let i=0;i<arrowCount-1;i++){
+    document.querySelectorAll(".arrow").forEach(a=>a.remove());
+    const distractColors = colors.filter(c=>c!==targetColor);
+    
+    // Spawn distractors - now with full opacity
+    for(let i=0; i<arrowCount-1; i++){
         let a=document.createElement("div");
         a.className="arrow";
         a.textContent=arrows[Math.floor(Math.random()*arrows.length)];
-        a.style.color=distractorColors[Math.floor(Math.random()*distractorColors.length)];
+        a.style.color=distractColors[Math.floor(Math.random()*distractColors.length)];
         a.style.fontSize=arrowSize+"px";
-        randomPosition(a);
-        document.body.appendChild(a);
+        randomPosition(a); document.body.appendChild(a);
     }
-
-    // Spawn target
+    
+    // Spawn target - identical style
     let correctArrow=document.createElement("div");
     correctArrow.className="arrow";
     correctArrow.textContent=arrows[Math.floor(Math.random()*arrows.length)];
     correctArrow.style.color=targetColor;
     correctArrow.style.fontSize=arrowSize+"px";
-    randomPosition(correctArrow);
-    document.body.appendChild(correctArrow);
-
+    randomPosition(correctArrow); document.body.appendChild(correctArrow);
+    
     targetArrow=correctArrow.textContent;
     spawnTime=performance.now();
 }
 
 function endLevel(){
-    active=false;
-    clearArrows();
-
+    overlayVisible = true; active=false;
+    document.querySelectorAll(".arrow").forEach(a=>a.remove());
     let accuracy= (attempts > 0) ? (correct/attempts)*100 : 0;
-    let avgReaction=correct>0?(totalReaction/correct):0;
-    let passed=accuracy>=80;
+    let avgReaction=correct>0 ? (totalReaction/correct) : 0;
+    let passThreshold = Math.min(85, 70 + (level * 3)); 
+    let passed = accuracy >= passThreshold;
 
     overlay.style.display="flex";
     overlay.innerHTML=`
         <div class="panel">
-            <h2>${passed?"LEVEL PASSED":"LEVEL FAILED"}</h2>
-            <p><strong>Accuracy:</strong> ${accuracy.toFixed(1)}%</p>
-            <p><strong>Average Reaction:</strong> ${avgReaction.toFixed(0)} ms</p>
-            <p><strong>Time Limit:</strong> ${allowedTime} ms</p>
-            <button onclick="nextLevel(${passed})">${passed ? "Next Level" : "Try Again"}</button>
+            <h2 style="color:${passed?'#00ffcc':'#ff4444'}">${passed?"LEVEL PASSED":"LEVEL FAILED"}</h2>
+            <div class="stat-line">Accuracy: <span class="highlight">${accuracy.toFixed(1)}%</span> (Goal: ${passThreshold}%)</div>
+            <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin:15px 0;">
+            <div class="stat-line">Your Avg Time: <span class="highlight">${avgReaction.toFixed(0)}ms</span></div>
+            <div class="stat-line">Expected Time: <span class="highlight">${allowedTime}ms</span></div>
+            <button id="action-btn" onclick="nextLevel(${passed})">${passed ? "Continue (Enter)" : "Retry (Enter)"}</button>
         </div>
     `;
 }
@@ -223,29 +236,23 @@ function nextLevel(passed){
     if(passed){
         level++;
         allowedTime=Math.max(300,allowedTime-50);
-        arrowSize=Math.max(50,arrowSize-5);
+        arrowSize=Math.max(60,arrowSize-4);
         arrowCount+=1;
     }
     showLevelBrief();
 }
 
 document.addEventListener("keydown",function(e){
-    if(!active) return;
-    if(!arrowKeys[e.key]) return; // Ignore non-arrow keys
+    if (e.key === "Enter" && overlayVisible) { document.getElementById("action-btn")?.click(); return; }
+    if(!active || !arrowKeys[e.key]) return; 
 
     let reaction=performance.now()-spawnTime;
     attempts++;
-
     if(arrowKeys[e.key] === targetArrow && reaction <= allowedTime){
-        correct++;
-        totalReaction+=reaction;
+        correct++; totalReaction+=reaction;
     }
-
-    if(attempts>=requiredAttempts){
-        endLevel();
-    }else{
-        generateArrows();
-    }
+    if(attempts>=requiredAttempts) endLevel();
+    else generateArrows();
 });
 
 showLevelBrief();
